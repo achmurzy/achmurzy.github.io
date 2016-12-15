@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset=utf-8>
+		<title>Niwot Ridge Facilitation Data Exploration</title>
+		<style>
+
+            body { margin: 0; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+
+            /*These style sheets demand an element of class "box"*/
+            .box {
+              font: 10px sans-serif;
+            }
+
+            .box line,
+            .box rect,
+            .box circle {
+              fill: orange;
+              stroke: #000;
+              stroke-width: 3.0px;
+            }
+
+            .box .center {
+              stroke-dasharray: 3,3;
+            }
+
+            .box .outlier {
+              fill: red;
+              stroke: #ccc;
+            }
+
+			
+			canvas { width: 100%; height: 100% }
+            svg { position:absolute; }
+
+		</style>
+	</head>
+	<body>
+        <script src="https://d3js.org/d3.v4.min.js"></script>
+        <script src="box.js"></script>
+		<script>
+            
+            var margin = {top: 20, right: 20, bottom: 20, left: 20},
+                        mWidth = 1000 - margin.left - margin.right,
+                        mHeight = 1000 - margin.top - margin.bottom;
+
+            var canvas = d3.select("body").append("svg")
+                .attr("class", "container")
+                .attr("width", (2*mWidth) + (2*margin.left) + (2*margin.right))
+                .attr("height", (2*mHeight) + (2*margin.top) + (2*margin.bottom))
+
+            d3.csv("Comp_RA.csv", function(data) 
+            { 
+                var tableGraphic = canvas.append("svg")
+                    .attr("class", "table")
+                    .attr("x", 0).attr("y", 0)
+                    .attr("width", mWidth).attr("height", mHeight);
+
+                var row = tableGraphic.selectAll("plot").data(data).enter()
+                    .append("g")
+                        .attr("x", margin.left)
+                        .attr("y", margin.top)
+                        .attr("transform", function(d, i)
+                        { 
+                            return ("translate("+0+","+(margin.top+(10 * i))+")");
+                        });
+
+                //There is a proper way to do this with ranges and scales.
+                //Find it
+                var headers = tableGraphic.selectAll("spp_codes").data(d3.keys(data[0]))
+                    .enter().each(function(d, i)
+                        {
+                            if (i > 2)
+                            {
+                                var ind = i -3;
+                                d3.select(this).append("text")
+                                    .text(function(d, i) { return d; })
+                                    .attr("font-family", "sans-serif")
+                                    .attr("font-size", 5)
+                                    .attr("x", margin.left + (25 * ind))
+                                    .attr("y", margin.top/2);
+                            }    
+                        });
+                        
+                row.append("text")
+                    .text(function(d) { return d["subplot"]; })
+                    .attr("font-family", "sans-serif")
+                    .attr("font-size", 10)
+                    .attr("x", 0)
+                    .attr("y", 0);
+                        
+                //The row elements are objects keyed by column names
+                //We need to bind to an array of values, so we call d3.values()
+                row.selectAll("rect.spp").data(function(d) { return d3.values(d); })
+                    .enter().each(function(d, i) 
+                        {  
+                            if (i > 2)
+                            {
+                                var ind = i - 3;
+                                d3.select(this).append("rect")
+                                    .attr("x", margin.left + (ind * 25))
+                                    .attr("y",  -5)
+                                    .attr("width", d)
+                                    .attr("height", 10 );
+                            }  
+                        });
+            });
+
+            var richPlot = d3.box()
+            .whiskers(iqr(1.0))
+            .width(mWidth/4)
+            .height(mHeight/2);
+
+            d3.csv("richness.csv", function(richness)
+            {
+                var data = [];
+
+                //Nests data for processing by box.js
+                richness.forEach(function(d) 
+                    { 
+                        var e = 0,
+                            s = d['x'] = +d['x'];
+                            d = data[e];
+                        if(!d) d = data[e] = [s];
+                        else d.push(s);
+                    });
+
+                var minmax=d3.extent(richness, function(d) { return d.x; }); 
+                
+                richPlot.domain([minmax[0], minmax[1]]);
+
+                var box = canvas.selectAll("rich").data(data).enter()
+                    .append("svg")
+                        .attr("class", "box")
+                        .attr("x", mWidth - margin.left)
+                        .attr("y", 0)
+                        .attr("width", (mWidth/4) + 2*(margin.left + margin.right))
+                        .attr("height", mHeight + (margin.top + margin.bottom))
+                        .append("g")
+                            .attr("transform", "translate("+margin.left+","+margin.top+")")
+                            .call(richPlot);
+            });            
+
+            var diversePlot = d3.box()
+            .whiskers(iqr(1.0))
+            .width(mWidth/4)
+            .height(mHeight/2);
+            
+            d3.csv("diversity.csv", function(diversity)
+            {
+                var data = [];
+
+                //Nests data for processing by box.js
+                diversity.forEach(function(d) 
+                    { 
+                        var e = 0,
+                            s = d['x'] = +d['x'];
+                            d = data[e];
+                        if(!d) d = data[e] = [s];
+                        else d.push(s);
+                    });
+
+                var minmax=d3.extent(diversity, function(d) { return d.x; }); 
+                
+                diversePlot.domain([minmax[0], minmax[1]]);
+
+                var box = canvas.selectAll("diversity").data(data).enter()
+                    .append("svg")
+                        .attr("class", "box")
+                        .attr("x", mWidth + mWidth/4 + (2*margin.left) + (2*margin.right))
+                        .attr("y", 0)
+                        .attr("width", (mWidth/4) + (margin.left + margin.right))
+                        .attr("height", mHeight + (margin.top + margin.bottom))
+                        .append("g")
+                            .attr("transform", "translate("+margin.left+","+margin.top+")")
+                            .call(diversePlot);
+            });
+
+            function iqr(k) 
+            {
+                return function(d, i) 
+                {
+                    var q1 = d.quartiles[0],
+                        q3 = d.quartiles[2],
+                        iqr = (q3 - q1) * k,
+                        i = -1,
+                        j = d.length;
+                    while (d[++i] < q1 - iqr);
+                    while (d[--j] > q3 + iqr);
+                    return [i, j];
+                };
+            }
+		</script>
+	</body>
+</html>

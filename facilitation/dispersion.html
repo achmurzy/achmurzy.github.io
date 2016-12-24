@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset=utf-8>
+		<title>Niwot Ridge Facilitation Data Exploration</title>
+		<style>
+
+            body { font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
+
+            .container text { font: 10px sans-serif; }
+
+            /*These style sheets demand an element of class "box"*/
+            .box {
+              font: 10px sans-serif;
+            }
+
+            .box line,
+            .box rect,
+            .box circle {
+              fill: orange;
+              stroke: #000;
+              stroke-width: 3.0px;
+            }
+
+            .box .center {
+              stroke-dasharray: 3,3;
+            }
+
+            .box .outlier {
+              fill: red;
+              stroke: #ccc;
+            }
+
+		</style>
+	</head>
+	<body>
+        <script src="https://d3js.org/d3.v4.min.js"></script>
+        <script src="box.js"></script>
+		<script>
+            
+            var margin = {top: 20, right: 20, bottom: 20, left: 50},
+                        mWidth = 800 - margin.left - margin.right,
+                        mHeight = 1800 - margin.top - margin.bottom;
+
+            var canvas = d3.select("body").append("svg")
+                .attr("class", "container")
+                .attr("width", (mWidth) + (2*margin.left) + (2*margin.right))
+                .attr("height", (mHeight) + (2*margin.top) + (2*margin.bottom));
+
+            var heightPlot = d3.box()
+            .whiskers(iqr(1.0))
+            .width(mWidth/8)
+            .height(mHeight/5);
+
+            var areaPlot = d3.box()
+            .whiskers(iqr(1.0))
+            .width(mWidth/8)
+            .height(mHeight/5);
+
+            var ldmcPlot = d3.box()
+            .whiskers(iqr(1.0))
+            .width(mWidth/8)
+            .height(mHeight/5);
+
+            var slaPlot = d3.box()
+            .whiskers(iqr(1.0))
+            .width(mWidth/8)
+            .height(mHeight/5);
+
+            var heightData = [];
+            var areaData = [];
+            var ldmcData = [];
+            var slaData = [];
+
+
+            d3.csv("FD_cushion.csv", function(FDCush)
+            {
+                //Nests data for processing by box.js
+                FDCush.forEach(function(x) 
+                    { 
+                        var e = 0,
+                            s = x['CWM.AREA_cm2'] = +x['CWM.AREA_cm2'],
+                            d = areaData[e];
+                        if(!d) areaData[e] = [s];
+                        else d.push(s);
+
+                        s = x['CWM.HEIGHT_cm'] = +x['CWM.HEIGHT_cm'];
+                        d = heightData[e];
+                        if(!d) d = heightData[e] = [s];
+                        else d.push(s);
+
+                        s = x['CWM.LDMC'] = +x['CWM.LDMC'];
+                        d = ldmcData[e];
+                        if(!d) d = ldmcData[e] = [s];
+                        else d.push(s);
+
+                        s = x['CWM.SLA'] = +x['CWM.SLA'];
+                        d = slaData[e];
+                        if(!d) d = slaData[e] = [s];
+                        else d.push(s);                       
+                    });
+
+                canvas.append("text")
+                            .attr("x", margin.left)
+                            .attr("y", margin.top)
+                            .attr("width", mWidth/5)
+                            .attr("height", margin.top)
+                            .attr("font-family", "sans-serif")
+                            .attr("font-size", 10)
+                            .text("Raw Cushion FD");
+
+                d3.csv("FD_cushion_ind.csv", function(FDTundra)
+                {
+                    FDTundra.forEach(function(x) 
+                    { 
+                        var e = 1,
+                            s = x['CWM.AREA_cm2'] = +x['CWM.AREA_cm2'],
+                            d = areaData[e];
+                        if(!d) areaData[e] = [s];
+                        else d.push(s);
+
+                        s = x['CWM.HEIGHT_cm'] = +x['CWM.HEIGHT_cm'];
+                        d = heightData[e];
+                        if(!d) d = heightData[e] = [s];
+                        else d.push(s);
+
+                        s = x['CWM.LDMC'] = +x['CWM.LDMC'];
+                        d = ldmcData[e];
+                        if(!d) d = ldmcData[e] = [s];
+                        else d.push(s);
+
+                        s = x['CWM.SLA'] = +x['CWM.SLA'];
+                        d = slaData[e];
+                        if(!d) d = slaData[e] = [s];
+                        else d.push(s);                       
+                    });
+
+                    canvas.append("text")
+                        .attr("x", margin.left + mWidth/4)
+                        .attr("y", margin.top)
+                        .attr("width", mWidth/5)
+                        .attr("height", margin.top)
+                        .attr("font-family", "sans-serif")
+                        .attr("font-size", 10)
+                        .text("Cushion Indicator FD");
+
+                    d3.csv("FD_tundra.csv", function(FDCushInd)
+                    {
+                        FDCushInd.forEach(function(x) 
+                        { 
+                            var e = 2,
+                                s = x['CWM.AREA_cm2'] = +x['CWM.AREA_cm2'],
+                                d = areaData[e];
+                            if(!d) areaData[e] = [s];
+                            else d.push(s);
+
+                            s = x['CWM.HEIGHT_cm'] = +x['CWM.HEIGHT_cm'];
+                            d = heightData[e];
+                            if(!d) d = heightData[e] = [s];
+                            else d.push(s);
+
+                            s = x['CWM.LDMC'] = +x['CWM.LDMC'];
+                            d = ldmcData[e];
+                            if(!d) d = ldmcData[e] = [s];
+                            else d.push(s);
+
+                            s = x['CWM.SLA'] = +x['CWM.SLA'];
+                            d = slaData[e];
+                            if(!d) d = slaData[e] = [s];
+                            else d.push(s);                       
+                        });
+
+                        canvas.append("text")
+                                .attr("x", margin.left + mWidth/2)
+                                .attr("y", margin.top)
+                                .attr("width", mWidth/5)
+                                .attr("height", margin.top)
+                                .attr("font-family", "sans-serif")
+                                .attr("font-size", 10)
+                                .text("Raw Tundra FD");
+
+                        d3.csv("FD_tundra_ind.csv", function(FDTundraInd)
+                        {
+                            FDTundraInd.forEach(function(x) 
+                            { 
+                                var e = 3,
+                                    s = x['CWM.AREA_cm2'] = +x['CWM.AREA_cm2'],
+                                    d = areaData[e];
+                                if(!d) areaData[e] = [s];
+                                else d.push(s);
+
+                                s = x['CWM.HEIGHT_cm'] = +x['CWM.HEIGHT_cm'];
+                                d = heightData[e];
+                                if(!d) d = heightData[e] = [s];
+                                else d.push(s);
+
+                                s = x['CWM.LDMC'] = +x['CWM.LDMC'];
+                                d = ldmcData[e];
+                                if(!d) d = ldmcData[e] = [s];
+                                else d.push(s);
+
+                                s = x['CWM.SLA'] = +x['CWM.SLA'];
+                                d = slaData[e];
+                                if(!d) d = slaData[e] = [s];
+                                else d.push(s);                       
+                            });
+
+                            canvas.append("text")
+                                .attr("x", margin.left + (3*mWidth/4))
+                                .attr("y", margin.top)
+                                .attr("width", mWidth/5)
+                                .attr("height", margin.top)
+                                .attr("font-family", "sans-serif")
+                                .attr("font-size", 10)
+                                .text("Tundra Indicator FD");
+
+                            canvas.append("text")
+                                .attr("x", 0)
+                                .attr("y", 2*margin.top)
+                                .attr("width", mWidth/5)
+                                .attr("height", margin.top)
+                                .attr("font-family", "sans-serif")
+                                .attr("font-size", 10)
+                                .text("Height (cm)");
+                            var heightMin=d3.min(heightData, function(plot) 
+                                { return d3.min(plot); } );
+                            var heightMax=d3.max(heightData, function(plot) 
+                                { return d3.max(plot); } );
+                            heightPlot.domain([heightMin, heightMax]);
+                            var box = canvas.selectAll("heights").data(heightData).enter()
+                            .append("svg")
+                                .attr("class", "box")
+                                .attr("x", function(d, i) { 
+                                    return margin.left + (mWidth/4 * i); })
+                                .attr("y", margin.top)
+                                .attr("width", (mWidth/4))
+                                .attr("height", (mHeight/4) + (margin.top + margin.bottom))
+                                .append("g")
+                                    .attr("transform", "translate("+(margin.left)+","+margin.top+")")
+                                    .call(heightPlot);
+
+                            canvas.append("text")
+                                .attr("x", 0)
+                                .attr("y", 2*margin.top + mHeight/4)
+                                .attr("width", mWidth/5)
+                                .attr("height", margin.top)
+                                .attr("font-family", "sans-serif")
+                                .attr("font-size", 10)
+                                .text("Area (cm2)");
+                            var areaMin=d3.min(areaData, function(plot) 
+                                { return d3.min(plot); } );
+                            var areaMax=d3.max(areaData, function(plot) 
+                                { return d3.max(plot); } );
+                            areaPlot.domain([areaMin, areaMax]);
+                            var box = canvas.selectAll("areas").data(areaData).enter()
+                            .append("svg")
+                                .attr("class", "box")
+                                .attr("x", function(d, i) { 
+                                    return margin.left + (mWidth/4 * i); })
+                                .attr("y", margin.top + mHeight/4)
+                                .attr("width", (mWidth/4))
+                                .attr("height", (mHeight/4) + (margin.top + margin.bottom))
+                                .append("g")
+                                    .attr("transform", "translate("+(margin.left)+","+margin.top+")")
+                                    .call(areaPlot);
+
+                            canvas.append("text")
+                                .attr("x", 0)
+                                .attr("y", 2*margin.top + mHeight/2)
+                                .attr("width", mWidth/5)
+                                .attr("height", margin.top)
+                                .attr("font-family", "sans-serif")
+                                .attr("font-size", 10)
+                                .text("LDMC");
+                            var ldmcMin=d3.min(ldmcData, function(plot) 
+                                { return d3.min(plot); } );
+                            var ldmcMax=d3.max(ldmcData, function(plot) 
+                                { return d3.max(plot); } );
+                            ldmcPlot.domain([ldmcMin, ldmcMax]);
+                            var box = canvas.selectAll("ldmcs").data(ldmcData).enter()
+                            .append("svg")
+                                .attr("class", "box")
+                                .attr("x", function(d, i) { 
+                                    return margin.left + (mWidth/4 * i); })
+                                .attr("y", margin.top + (2*mHeight/4))
+                                .attr("width", (mWidth/4))
+                                .attr("height", (mHeight/4) + (margin.top + margin.bottom))
+                                .append("g")
+                                    .attr("transform", "translate("+(margin.left)+","+margin.top+")")
+                                    .call(ldmcPlot);
+
+                            canvas.append("text")
+                                .attr("x", 0)
+                                .attr("y", 2*margin.top + (3*mHeight/4))
+                                .attr("width", mWidth/5)
+                                .attr("height", margin.top)
+                                .attr("font-family", "sans-serif")
+                                .attr("font-size", 10)
+                                .text("SLA (cm2/g)");
+                            var slaMin=d3.min(slaData, function(plot) 
+                                { return d3.min(plot); } );
+                            var slaMax=d3.max(slaData, function(plot) 
+                                { return d3.max(plot); } );
+                            slaPlot.domain([slaMin, slaMax]);
+                            var box = canvas.selectAll("slas").data(slaData).enter()
+                            .append("svg")
+                                .attr("class", "box")
+                                .attr("x", function(d, i) { 
+                                    return margin.left + (mWidth/4 * i); })
+                                .attr("y", margin.top + (3*mHeight/4))
+                                .attr("width", (mWidth/4))
+                                .attr("height", (mHeight/4) + (margin.top + margin.bottom))
+                                .append("g")
+                                    .attr("transform", "translate("+(margin.left)+","+margin.top+")")
+                                    .call(slaPlot);
+                        });
+                    }); 
+                });             
+            });             
+
+            function iqr(k) 
+            {
+                return function(d, i) 
+                {
+                    var q1 = d.quartiles[0],
+                        q3 = d.quartiles[2],
+                        iqr = (q3 - q1) * k,
+                        i = -1,
+                        j = d.length;
+                    while (d[++i] < q1 - iqr);
+                    while (d[--j] > q3 + iqr);
+                    return [i, j];
+                };
+            }
+		</script>
+	</body>
+</html>

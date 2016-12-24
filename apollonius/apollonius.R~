@@ -1,0 +1,26 @@
+#Circles are specified as a triple (k, x*k, y*k)
+#The last two terms allow us to perform a translation 
+#based on the position of the initial containing circle
+
+appollonians = data.frame()
+
+appolloni
+
+positiveDescartes <- function(A_k, B_k, C_k)
+{
+    return (A_k + B_k + C_k + 2*sqrt(A_k*B_k + B_k*C_k + A_k*C_k))
+}
+
+negativeDescartes <- function(A_k, B_k, C_k)
+{
+    return (A_k + B_k + C_k - 2*sqrt(A_k*B_k + B_k*C_k + A_k*C_k))
+}
+
+appollonianSpheres(A_k, B_k, C_k)
+{
+    curve1 = positiveDescartes(A_k, B_k, C_k)
+    curve2 = negativeDescartes(A_k, B_k, C_k)
+
+    
+    appollonianSpheres(
+}

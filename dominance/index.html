@@ -2,44 +2,19 @@
 <html>
 	<head>
 		<meta charset=utf-8>
-		<title>Niwot Ridge Facilitation Data Exploration</title>
+		<title>Light Competition</title>
 		<style>
 
             body { margin: 0; font-family: "Helvetica Neue", Helvetica, Arial, sans-serif; }
-
-            /*These style sheets demand an element of class "box"*/
-            .box {
-              font: 10px sans-serif;
-            }
-
-            .box line,
-            .box rect,
-            .box circle {
-              fill: orange;
-              stroke: #000;
-              stroke-width: 3.0px;
-            }
-
-            .box .center {
-              stroke-dasharray: 3,3;
-            }
-
-            .box .outlier {
-              fill: red;
-              stroke: #ccc;
-            }
-
-			
 			canvas { width: 100%; height: 100% }
-            svg { position:absolute; }
+            svg { position:absolute; width:100%; height:100%; }
 
 		</style>
 	</head>
-	<body>
+	<body onload="init(evt)">
         <script src="https://d3js.org/d3.v4.min.js"></script>
-        <script src="box.js"></script>
-		<script>
-            
-		</script>
+        <script src="appolonius.js"></script>
+        <svg ></svg>
+		<!--<script src="plot_view.js"></script>-->
 	</body>
 </html>

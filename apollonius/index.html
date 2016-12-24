@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset=utf-8>
+    <title>Light Competition</title>
+  </head>
+  <body>
+    <script>
+      function A(s){P='<svg width=800 height=800><g fill=none stroke=red transform=translate(400,400)>';Q=[];s=eval(s);S=-400*s[0][0];function d(c){P+='<circle r='+Math.abs(S/c[0])+' cx='+S*c[1]/c[0]+' cy='+S*c[2]/c[0]+' />'}for(c=4;c--;d(s[0]),s.push(s.shift()))Q.push(s.slice());for(;s=Q.shift();d(c)){c=[];for(i=4;i--;)c[i]=2*(s[0][i]+s[1][i]+s[2][i])-s[3][i];for(i=6;c[0]<S&&i;)Q.push([s[i--%3],s[i--%3],c,s[i%3]])}document.body.innerHTML=P}
+      //A('[[-6, 0, 0], [10, 2/3, 0], [15, -3/2, 0], [19, -5/6, 2]]');
+      //A('[[-2, 0, 0], [3, 1/2, 0], [6, -2, 0], [7, -3/2, 2]]');
+      //A('[[-15, 0, 0], [17, 2/15, 0], [128, -112/15, -1], [128, -112/15, 1]]');
+      A('[[-10, 0, 0], [18, 4/5, 0], [23, -6/5, -1/2], [27, -4/5, 3/2]]');
+    </script>
+  </body>
+</html>

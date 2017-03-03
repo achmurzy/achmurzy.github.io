@@ -1,26 +1,117 @@
-#Circles are specified as a triple (k, x*k, y*k)
-#The last two terms allow us to perform a translation 
-#based on the position of the initial containing circle
+#Implementing Descartes' theorem for calculating curvature(radii) and x, y coordinates
+descartes_positive <- function(c1, c2, c3)
+            {
+                return (c1 + c2 + c3 + (2 * sqrt(c1*c2 + c2*c3 + c1*c3)))   
+            }
+descartes_negative <- function(c1, c2, c3)
+            {
+                return (c1 + c2 + c3 - (2 * sqrt(c1*c2 + c2*c3 + c1*c3)))    
+            }
+            
+descartes_complex_positive <- function(c1, c2, c3, c4, z1, z2, z3)
+            {
+                return (((c1*z1) + (c2*z2) + (c3*z3) + (2 * sqrt((c1*c2*z1*z2) + (c2*c3*z2*z3) + (c1*c3*z1*z3)))) / c4) 
+            }
+            
+descartes_complex_negative <- function(c1, c2, c3, c4, z1, z2, z3)
+            {
+                return (((c1*z1) + (c2*z2) + (c3*z3) - (2 * sqrt((c1*c2*z1*z2) + (c2*c3*z2*z3) + (c1*c3*z1*z3)))) / c4) 
+            }
+            
+#Takes row indices to recursively compute a gasket
+apollonians <- function(c1, c2, c3, step)
+            {
+                step = step + 1
+                if (step > get("Iterations", envir=.GlobalEnv))
+                {
+                    print ("Terminate recursion") 
+                    return()
+                }
+                
+                A_gasket <- get("A_gasket", envir=.GlobalEnv)
+                curv1 = 1/A_gasket[c1,]$RADIUS
+                curv2 = 1/A_gasket[c2,]$RADIUS
+                curv3 = 1/A_gasket[c3,]$RADIUS
+                circle_1_k = descartes_positive(curv1, curv2, curv3)
+                circle_2_k = descartes_negative(curv1, curv2, curv3)
+                
+                comp1 <- complex(real = A_gasket[c1,]$X, imaginary = A_gasket[c1,]$Y)
+                comp2 <- complex(real = A_gasket[c2,]$X, imaginary = A_gasket[c2,]$Y)
+                comp3 <- complex(real = A_gasket[c3,]$X, imaginary = A_gasket[c3,]$Y)
+                circle_1_z = descartes_complex_positive(curv1, curv2, curv3, circle_1_k, comp1, comp2, comp3)
+                circle_2_z = descartes_complex_negative(curv1, curv2, curv3, circle_2_k, comp1, comp2, comp3)
+                
+                ind <- addCircle(1/circle_1_k, Re(circle_1_z), Im(circle_1_z))
+                apollonians(c1, c2, ind, step)
+                apollonians(c2, c3, ind, step)
+                apollonians(c1, c3, ind, step)
+                
+                ind <- addCircle(1/circle_2_k, Re(circle_2_z), Im(circle_2_z))
+                apollonians(c1, c2, ind, step)
+                apollonians(c2, c3, ind, step)
+                apollonians(c1, c3, ind, step)
+                
+                return()
+            }
+            
+addCircle <- function(r, x, y)
+            {
+                ag <- rbind(get("A_gasket", envir=.GlobalEnv), 
+                    data.frame(RADIUS=r, X=x, Y=y))
+                assign("A_gasket", ag, envir = .GlobalEnv)
+                return (nrow(ag))
+            }
 
-appollonians = data.frame()
+#Takes initial radii ( r < 0.5 ) of two circles to start recursion
+#Computes positions of both, assumes c1 is vertically aligned with
+#center of inscribing circle fixed at (0.5, 0.5).
+initApollonians <- function(r1, r2)
+            {
+                if (r1 > 0.5 || r2 > 0.5)
+                    {
+                        print("Smaller radii needed for subdivision")
+                        return()
+                    }
+                    
+                x1 <- 0.5
+                y1 <- r1
+                
+                a <- r1 + r2
+                b <- 0.5 - r2
+                c <- 0.5 - r1
+                
+                alphaAngle = acos(((b)**2 + (c)**2 - (a)**2) / (2*b*c))
 
-appolloni
+                #Normalize input vector
+                norm = sqrt(0.5**2 + r1**2)
+                nx1 = x1 / norm
+                ny1 = y1 / norm
 
-positiveDescartes <- function(A_k, B_k, C_k)
-{
-    return (A_k + B_k + C_k + 2*sqrt(A_k*B_k + B_k*C_k + A_k*C_k))
-}
+                #Rotate normalized vector
+                nx2 <- (nx1*cos(alphaAngle)) - (ny1*sin(alphaAngle))
+                ny2 <- (nx1*sin(alphaAngle)) + (ny1*cos(alphaAngle))
+                
+                #Extend by radius
+                x2 <- nx2 * r2
+                y2 <- ny2 * r2
 
-negativeDescartes <- function(A_k, B_k, C_k)
-{
-    return (A_k + B_k + C_k - 2*sqrt(A_k*B_k + B_k*C_k + A_k*C_k))
-}
+                addCircle(r1, x1, y1)
+                addCircle(r2, x2, y2)
+                
+                return()
+            }
+            
+gasket <- function(r1, r2, iters)
+            {
+                #A_gasket <- data.frame(RADIUS = numeric(), X = numeric(), Y = numeric())
+                assign("A_gasket", 
+                    data.frame(RADIUS = numeric(), X = numeric(), Y = numeric()), 
+                        envir = .GlobalEnv)
+                assign("Iterations", iters, envir = .GlobalEnv)
+                step = 0
+                initApollonians(r1, r2)
+                apollonians(0, 1, 2, step)
+                write.csv(get("A_gasket", envir=.GlobalEnv), file="apollonians.csv")
+            }
 
-appollonianSpheres(A_k, B_k, C_k)
-{
-    curve1 = positiveDescartes(A_k, B_k, C_k)
-    curve2 = negativeDescartes(A_k, B_k, C_k)
-
-    
-    appollonianSpheres(
-}
+gasket(0.1, 0.2, 2)

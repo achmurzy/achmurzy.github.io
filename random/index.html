@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset=utf-8>
+    <title>Codex</title>
+    <style>
+      html, body { width: 100%; height: 100%; margin: 0px; }
+    </style>
+  </head>
+  <body>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script>
+
+    //Creating small testing environments like these can give us faster debugging
+    //than experimenting in complex development environments.
+      var margin = {top: 40, right: 40, bottom: 40, left: 40},
+                        mWidth = 800, 
+                        mHeight = 800;
+
+      var canvas = d3.select("body").append("svg")
+                .attr("class", "container")
+                .attr("x", margin.left)
+                .attr("y", margin.top)
+                .attr("width", (mWidth) + (margin.right))
+                .attr("height", (mHeight) + (margin.bottom));
+
+      canvas.append("path")
+        .attr("d", "M200, 400L400, 400")
+        .style("stroke", "black")
+        .style("stroke-width", 1)
+        .style("stroke-dasharray", function() { return this.getTotalLength(); } )
+        .style("stroke-dashoffset", function() { return this.getTotalLength(); } )
+        .transition()
+          .duration(2000)
+          .ease(d3.easeLinear)
+          .style("stroke", "red")
+          .style("stroke-width", function() { return 10+"px"; })
+          //.style("stroke-dasharray", function() 
+          //  { console.log(this.getTotalLength()); return this.getTotalLength(); });
+          .style("stroke-dashoffset", 0+"px");
+      //buildFont();
+    </script>
+  </body>
+</html>

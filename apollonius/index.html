@@ -3,14 +3,180 @@
   <head>
     <meta charset=utf-8>
     <title>Light Competition</title>
+    <style>
+      circle{
+              fill-opacity:0;
+              stroke:#000;
+            }
+    </style>
   </head>
   <body>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="https://d3js.org/d3-force.v1.min.js"></script>
     <script>
-      function A(s){P='<svg width=800 height=800><g fill=none stroke=red transform=translate(400,400)>';Q=[];s=eval(s);S=-400*s[0][0];function d(c){P+='<circle r='+Math.abs(S/c[0])+' cx='+S*c[1]/c[0]+' cy='+S*c[2]/c[0]+' />'}for(c=4;c--;d(s[0]),s.push(s.shift()))Q.push(s.slice());for(;s=Q.shift();d(c)){c=[];for(i=4;i--;)c[i]=2*(s[0][i]+s[1][i]+s[2][i])-s[3][i];for(i=6;c[0]<S&&i;)Q.push([s[i--%3],s[i--%3],c,s[i%3]])}document.body.innerHTML=P}
-      //A('[[-6, 0, 0], [10, 2/3, 0], [15, -3/2, 0], [19, -5/6, 2]]');
-      //A('[[-2, 0, 0], [3, 1/2, 0], [6, -2, 0], [7, -3/2, 2]]');
-      //A('[[-15, 0, 0], [17, 2/15, 0], [128, -112/15, -1], [128, -112/15, 1]]');
-      A('[[-10, 0, 0], [18, 4/5, 0], [23, -6/5, -1/2], [27, -4/5, 3/2]]');
+      var margin = {top: 40, right: 40, bottom: 40, left: 40},
+                        mWidth = 500 - margin.left - margin.right,
+                        mHeight = 500 - margin.top - margin.bottom;
+
+      var displayCircles = 10000;
+
+      if(true)
+        {
+          d3.csv("apollonians.csv", function(data)
+          {
+              var canvas = d3.select("body").append("svg")
+                .attr("class", "container")
+                .attr("x", margin.left)
+                .attr("y", margin.top)
+                .attr("width", (mWidth) + (margin.left) + (margin.right))
+                .attr("height", (mHeight) + (margin.top) + (margin.bottom));
+
+              var t = d3.transition().ease(d3.easeLinear).duration(1000);
+
+              var circles = canvas.selectAll("apollonians")
+                .data(data).enter().each(function(d, i) 
+                  { 
+                      if (i < displayCircles)//&& abs(d.RADIUS * mWidth) > 1)
+                      {
+                          d3.select(this).append('circle')
+                            .attr('cx', function(d) { 
+                              return margin.left + ((d.X)*mWidth); })
+                            .attr('cy', function(d) { 
+                              return margin.top + ((d.Y) * mHeight); })
+                            .attr('r', function(d) {  
+                              return (d.RADIUS < 0 ? -d.RADIUS : d.RADIUS) * mWidth; })
+                            .style('fill-opacity', function(d) { return d.OPAQUE; })
+                      }
+                  });
+
+              //A callback defining a pulse transition
+              function pulse() 
+              {
+                d3.active(this)
+                  .style('fill', 'green')
+                  .style('stroke', 'white')
+                .transition()
+                  .style('fill', 'yellow')
+                  .style('stroke', 'black')
+                .transition()
+                  .on("start", pulse);
+                            
+              }
+
+              var frequencies = [];
+              d3.select("body").data(data).enter().each(function(d, i)
+                {
+                    var rad = d.RADIUS < 0 ? -d.RADIUS : d.RADIUS;
+                    frequencies.push(-Math.log(rad));
+                });
+              var extent = d3.extent(frequencies);
+              var binWidth = 0.5;
+              var numBins = Math.ceil((extent[1] - extent[0]) / binWidth);
+
+              //Array constructor 
+              var bins = Array.apply(null, Array(numBins-1)).map(Number.prototype.valueOf,0);
+              var resolution = (extent[1] / numBins);
+              
+              for(var i = 0; i < frequencies.length; i++)
+              {
+                bins[Math.floor(numBins*((frequencies[i]/extent[1])-0.01))-1]++;
+              }
+
+              var graph = d3.select("body").append("svg")
+                .attr("class", "graph")
+                .attr("x", mWidth + margin.left)
+                .attr("y", 0)
+                .attr("width", (mWidth) + (margin.left) + (margin.right))
+                .attr("height", (mHeight) + (margin.top) + (margin.bottom));
+
+              //Observe the proper use of scales to construct the chart
+
+              var xScale = d3.scaleLinear().domain([0, extent[1]]).
+                range([0, mWidth]);
+
+              var yScale = d3.scaleLinear().domain([0, frequencies.length])
+                .range([0, mHeight]);
+
+              graph.selectAll("bins").data(bins).enter().each(function(d, i)
+                {
+                    d3.select(this).append("rect")
+                      .attr("x", (2*margin.left) + xScale(i * resolution))
+                      .attr("y", mHeight)
+                      .attr("width", mWidth/(numBins-1))
+                      .attr("height", 0)
+                      .style("fill", "white")
+                      .style("stroke", "black").transition(t)
+                        .attr("y", (mHeight)-(yScale(d)))
+                        .attr("height", yScale(d));
+                });
+
+              var xAxis = d3.axisBottom(xScale);
+              graph.append("g").attr("transform", "translate("+(2*margin.left)+", " + 
+                (mHeight) + ")").call(xAxis);
+              graph.append("text")
+                .attr("text-anchor", "middle")
+                .attr("transform", 'translate(' + mWidth/2 + ',' + (mHeight + margin.bottom) + ')')
+                .text("-log Radius");
+
+              var yAxis = d3.axisLeft(yScale);
+              graph.append("g").attr("transform", "translate("+(2*margin.left)+", "+
+                (0) + ")").call(yAxis);
+              graph.append("text")
+                .attr("text-anchor", "middle")
+                .attr("transform", 'translate(' + margin.left + ',' + mHeight/2 + ')rotate(-90)')
+                .text("Frequency");
+        });
+      }
+
+      if(!true)
+      {
+        d3.csv("bosque.csv", function(bosque)
+        {
+            //Landscape size is 125km^2
+            var landscape_ratio = mWidth / 125000;
+            var drawScale = 10;
+
+            var forest = d3.select("body").append("svg")
+              .attr("class", "forest")
+              .attr("x", margin.left)
+              .attr("y", mHeight + margin.top + margin.bottom)
+              .attr("width", (mWidth) + (2*margin.left) + (2*margin.right))
+              .attr("height", (mHeight) + (2*margin.top) + (2*margin.bottom));
+
+            var maxTrees = 550;
+            var nodes = [];
+            d3.select("body").data(bosque).enter().each(function(d, i)
+            {
+              if(i < maxTrees)
+              {
+                  nodes.push({x: d3.randomUniform(0, mWidth)(), 
+                          y: d3.randomUniform(0, mHeight)(),
+                          r: d.V1 * landscape_ratio * drawScale,
+                          c: parseInt(d.V3) === 1 ? 0.5:1.0 });
+              }
+            });
+
+            var force = d3.forceSimulation()
+              .force("center", d3.forceCenter(margin.left + mWidth/2, margin.top + mHeight/2))
+              .force("x", d3.forceX(0))
+              .force("y", d3.forceY(0))
+              .force("collide",d3.forceCollide(function(d){return d.r + 1;}).iterations(4));
+
+            var node = forest.append("g")
+              .attr("class", "trees").selectAll("tree").data(nodes).enter()
+                .append("circle")
+                  .attr('class', 'node')
+                  .attr('r', function(d) { return d.r; })
+                  .style("fill", "green")
+                  .style("fill-opacity", function(d) 
+                    { return d.c; });
+                
+            var ticked = function() { 
+                                      node.attr("cx", function(d) { return d.x; })
+                                          .attr("cy", function(d) { return d.y; }); }
+            force.nodes(nodes).on("tick", ticked);
+        });
+      }
     </script>
   </body>
 </html>

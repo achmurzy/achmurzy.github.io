@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset=utf-8>
+    <title>Codex</title>
+    <style>
+      html, body { width: 100%; height: 100%; margin: 0px; }
+      path { fill:black; fill-opacity:0.0; stroke: #000; stroke-width: 1px; stroke-opacity: 1;}
+    </style>
+  </head>
+  <body>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="opentype.min.js"></script>
+    <script src="victor.min.js"></script>
+    <script src="glyph_generator.js"></script>
+    <script src="primitive_strokes.js"></script>
+    <script>
+
+      var glyphScale = 1000;
+      var boxScale = 50;
+
+      var margin = {top: 40, right: 40, bottom: 40, left: 40},
+                        mWidth = 400, 
+                        mHeight = 600;
+
+      var canvas = d3.select("body").append("svg")
+                .attr("class", "container")
+                .attr("x", margin.left)
+                .attr("y", margin.top)
+                .attr("width", (mWidth) + (margin.right))
+                .attr("height", (mHeight) + (margin.bottom));
+
+      var glyphsX = mWidth / boxScale;
+      var glyphsY = mHeight / boxScale;
+
+      //Scale from glyph generation space to canvas space
+      var x = d3.scaleLinear()
+                .domain([0, glyphScale])
+                .range([0, boxScale]);
+      var y = d3.scaleLinear()
+                .domain([0, glyphScale])
+                .range([0, boxScale]);
+
+      var gScaleX = d3.scaleLinear()
+        .domain([0, glyphsX])
+        .range([0, mWidth]);
+
+      var gScaleY = d3.scaleLinear()
+        .domain([0, glyphsY])
+        .range([0, mHeight]);
+
+      var glyphCounter = 0;
+      var unicodeCounter = 61;
+
+      //A function to organize how glyphs fill the standard unicode symbol table
+      //We start with lower-case roman letters, move to upper case, who know what then
+      function iterateUnicode()
+      {
+        glyphCounter++;
+        unicodeCounter++;
+        if(unicodeCounter == 81)
+        {
+          unicodeCounter = 41;
+        }
+      }
+
+      var generationTime = 50;
+      var drawDuration = 10;
+
+      var minStrokes = 1;
+      var maxStrokes = 4;
+      var codex = [];
+      var strokeData = [];
+
+      function addGlyph() 
+      {
+        if(codex.length >= glyphsX*glyphsY)
+        {
+          console.log("At glyph limit");
+          codex.length = 0;
+          strokeData.length = 0;
+          glyphCounter = 0;
+        }  
+
+        var glyph = generateGlyph(minStrokes+Math.floor(maxStrokes * Math.random()), 
+                      glyphCounter, unicodeCounter);
+        codex.push(glyph);
+        strokeData.push(glyphToStrokes(glyph));   
+        iterateUnicode();
+        update(strokeData);
+      }
+
+      //setInterval(addGlyph, generationTime);
+      d3.interval(addGlyph, generationTime);
+
+      //Cut glyphs into strokes separated by 'M' symbols
+      function glyphsToStrokes(glyphData)
+      {
+        var strokeData = [];
+        for(var i = 0; i < glyphData.length; i++)
+        {
+          strokeData[i] = glyphToStrokes(glyphData[i]);
+        }
+        return strokeData;
+      }
+
+      //Takes an <opentype.js> Glyph object and converts it into an array of stroke data
+      //While we're here, mirror points across the y-axis since computer graphics is
+      //fuckin retarded
+      function glyphToStrokes(glyphData)
+      {
+        var strokeObject = new Object();
+        strokeObject.fill = glyphData.path.fill;
+        strokeObject.stroke = glyphData.path.stroke;
+        strokeObject.strokeWidth = glyphData.path.strokeWidth;
+        strokeObject.strokes = [];
+
+        /* Visualizing results is the most expensive and most effective method of debugging
+
+        var startPerp = JSON.parse(JSON.stringify(glyphData.path.startPerp));
+        startPerp.y = -startPerp.y;
+        strokeObject.startPerp = startPerp;
+
+        var endPerp = JSON.parse(JSON.stringify(glyphData.path.endPerp));
+        endPerp.y = -endPerp.y;
+        strokeObject.endPerp = endPerp;
+
+        var flipPerp = JSON.parse(JSON.stringify(glyphData.path.perp));
+        flipPerp.y = -flipPerp.y;
+        strokeObject.perp = flipPerp;
+
+        var flipStart = JSON.parse(JSON.stringify(glyphData.path.start));
+        flipStart.y = MirrorY(flipStart.y);
+        strokeObject.start = flipStart;
+
+        var flipEnd = JSON.parse(JSON.stringify(glyphData.path.end));
+        flipEnd.y = MirrorY(flipEnd.y);
+        strokeObject.end = flipEnd;
+
+        var flipCp = JSON.parse(JSON.stringify(glyphData.path.cp));
+        flipCp.y = MirrorY(flipCp.y);
+        strokeObject.cp = flipCp;*/       
+         
+        var strokeCounter = -1;
+        strokeObject.strokes[0] = [];
+        for(var j = 0; j < glyphData.path.commands.length; j++)
+        {            
+          if(glyphData.path.commands[j].type === 'M')
+          {
+            strokeCounter++;  
+            strokeObject.strokes[strokeCounter] = [];
+          }
+
+          //Shouldn't we be mirroring control points when copying here?
+          var flipPoint = JSON.parse(JSON.stringify(glyphData.path.commands[j]));
+          if(flipPoint.type === 'Q' || flipPoint.type === 'C')
+          {
+            flipPoint.y1 = MirrorY(flipPoint.y1);
+            if(flipPoint.type === 'C')
+            {
+              flipPoint.y2 = MirrorY(flipPoint.y2);
+            }
+          }
+          flipPoint.y = MirrorY(flipPoint.y);
+          strokeObject.strokes[strokeCounter].push(flipPoint); 
+        }
+        return strokeObject;
+      }
+
+      /** GENERAL NOTE 
+        When modifying CSS attributes, we must be in the habit of specifying units
+        such as "px" for lengths to ensure commands are unambiguous across browsers **/
+        
+      function update(glyphStrokes)
+      {
+        var glyphs = canvas.selectAll("g").data(glyphStrokes);
+        
+        glyphs.exit()
+          .attr("class", "exit")
+          .remove();
+
+        glyphs.attr("class", "update");
+          
+        //Get glyphs entering to assign a box directly to the group
+        enterGlyphs = glyphs.enter()
+          .append("g")
+            .attr("class", "enter")
+            .attr("transform", function(d, i)
+              { 
+                var gY = Math.floor(i / glyphsX);
+                var gX = i - (gY * glyphsX);
+            return "translate(" + gScaleX(gX) + "," + gScaleY(gY) + ")";
+              });
+
+        enterGlyphs.append("rect")
+              .attr("x", 0)
+              .attr("y", function(d, i) { return 0; })
+              .attr("width", boxScale)
+              .attr("height", boxScale)
+              .attr("stroke", 'black')
+              .style("fill-opacity", 0)
+        enterGlyphs.append("rect")
+              .attr("x", 0)
+              .attr("y", function(d, i) { return 0; })
+              .attr("width", boxScale)
+              .attr("height", boxScale)
+              .attr("fill", 'green')
+              .style("fill-opacity", 0.35)
+              .on("click", function() { d3.select(this).attr("fill", 'red'); });
+
+        /*enterGlyphs.append("line")
+              .attr("x1", function(d) { return x(d.cp.x) - (d.perp.x * boxScale/4); })
+              .attr("y1", function(d) { return y(d.cp.y) - (d.perp.y * boxScale/4); })
+              .attr("x2", function(d) { return x(d.cp.x) + (d.perp.x * boxScale/4); })
+              .attr("y2", function(d) { return y(d.cp.y) + (d.perp.y * boxScale/4); })
+              .style("stroke", "red");
+
+        enterGlyphs.append("line")
+        .attr("x1", function(d) { return x(d.start.x) - (d.startPerp.x * boxScale/4); })
+        .attr("y1", function(d) { return y(d.start.y) - (d.startPerp.y * boxScale/4); })
+        .attr("x2", function(d) { return x(d.start.x) + (d.startPerp.x * boxScale/4); })
+        .attr("y2", function(d) { return y(d.start.y) + (d.startPerp.y * boxScale/4); })
+        .style("stroke", "red");
+
+        enterGlyphs.append("line")
+        .attr("x1", function(d) { return x(d.end.x) - (d.endPerp.x * boxScale/4); })
+        .attr("y1", function(d) { return y(d.end.y) - (d.endPerp.y * boxScale/4); })
+        .attr("x2", function(d) { return x(d.end.x) + (d.endPerp.x * boxScale/4); })
+        .attr("y2", function(d) { return y(d.end.y) + (d.endPerp.y * boxScale/4); })
+        .style("stroke", "red");
+
+        enterGlyphs.append("circle")
+              .attr("cx", function(d) { return x(d.cp.x); })
+              .attr("cy", function(d) { return y(d.cp.y); })
+              .attr("r", 2)
+              .style("fill", "blue");
+
+        enterGlyphs.append("circle")
+              .attr("cx", function(d) { return x(d.start.x); })
+              .attr("cy", function(d) { return y(d.start.y); })
+              .attr("r", 2)
+              .style("fill", "red");
+
+        enterGlyphs.append("circle")
+              .attr("cx", function(d) { return x(d.end.x); })
+              .attr("cy", function(d) { return y(d.end.y); })
+              .attr("r", 2)
+              .style("fill", "yellow");*/
+
+        //Merge with older glyphs to update strokes in one go
+        enterGlyphs.merge(glyphs);
+                 
+        //We need to break the data down and add path elements 
+        //one-by-one to visualize them effectively in d3's framework               
+        var strokes = glyphs.selectAll("path").data(function(d, i) 
+                          { return d.strokes; });
+        strokes.attr("class", "update");
+
+        strokes.enter()
+          .append("path")  
+            .attr("class", "enter")
+            //.style("fill", function(d) 
+            //  { return d3.select(this.parentNode).datum().fill; })
+            //.style("fill-opacity", function(d) 
+            //  { return 1; })
+            //.style("stroke", function(d) 
+            //  { return d3.select(this.parentNode).datum().stroke; })
+            //.style("stroke-width", function(d) 
+            //  { return d3.select(this.parentNode).datum().strokeWidth; })
+            .attr("d", function(d) { return strokeInterpret(d); })
+            .style("stroke-dasharray", function(d) 
+              { return this.getTotalLength(); })
+            .style("stroke-dashoffset", function(d) 
+              { return this.getTotalLength(); })
+            .transition()
+              .duration(drawDuration)
+              .delay(function(d, i) { return drawDuration * i; })
+              .ease(d3.easeLinear)
+              .style("stroke-dashoffset", function(d) 
+              { return 0+"px"; })
+              .style("fill", "blue")
+              .style("fill-opacity", 0.5)
+              .style("stroke", "yellow");
+      }
+
+      function strokeInterpret(datum)
+      {
+        var path = d3.path();
+        
+        for(var i  = 0; i < datum.length; i++)
+          {
+            var point = datum[i];
+            var pointX = x(point.x);
+            var pointY = y(point.y);
+            
+            switch(point.type)
+            {
+              case 'M':
+                path.moveTo(pointX, pointY);
+                break;
+              case 'L':
+                path.lineTo(pointX, pointY);
+                break ;
+              case 'Q':
+                path.quadraticCurveTo(x(point.x1), y(point.y1), pointX, pointY);
+                break;
+              case 'C':
+                path.bezierCurveTo(x(point.x1), y(point.y1), 
+                  x(point.x2), y(point.y2), pointX, pointY);
+                break;
+              case 'Z':                                    
+                path.closePath();
+                break;
+              default:
+                console.log("Uninterpretable symbol. Check path generation algorithm");
+            }
+          }
+        return path.toString();
+      }
+
+      function buildFont(glyphData)
+      {
+        var font = new opentype.Font({
+        familyName: 'OpenTypeSans',
+        styleName: 'Medium',
+        unitsPerEm: 1000,
+        ascender: 800,
+        descender: -200,
+        glyphs: glyphData });
+      
+        console.log(font);
+
+        fontJSON = JSON.stringify(font, function(key, value)
+          {
+            if(key === 'font')
+              return undefined;
+            return value;
+          });
+        
+        if(/Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor))
+          font.download();
+      }
+
+      //buildFont();
+    </script>
+  </body>
+</html>

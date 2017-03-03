@@ -1,0 +1,172 @@
+/*var lowerGlyphs = canvas.selectAll("lowerGlyphs").data(codex).enter()
+                  .append("g")
+                    .attr("transform", function(d, i)
+                      { return "translate(" + i * 100 + "," + boxScale + ")"; })
+                    .attr("class", "glyph");
+
+      var lowerBoxes = lowerGlyphs.append("rect")
+                    .attr("x", 0)
+                    .attr("y", 0)
+                    .attr("width", boxScale)
+                    .attr("height", boxScale)
+                    .attr("fill", 'red')
+                    .style("fill-opacity", 0.35);
+
+      var x = d3.scaleLinear()
+                .domain([0, glyphScale])
+                .range([0, boxScale]);
+      var y = d3.scaleLinear()
+                .domain([0, glyphScale])
+                .range([0, boxScale]);
+
+      var naiveLine = d3.line()
+                      .x(function(d, i) { return x(d.x); })
+                      .y(function(d, i) { return y(d.y); });*/
+
+      //The approach wherein all strokes are stored on a single <path> element
+      //is not viable, and less desireable for reasons of style. This still 
+      //requires re-structuring our data
+      /*var strokes = glyphs.append("path").datum(function(d, i) 
+                      { 
+                        d3.select(this).style("fill", function(d) { return d.path.fill; })
+                        .style("fill-opacity", 0)
+                        .style("stroke", function(d) { return d.path.stroke; })
+                        .style("stroke-width", function(d) { return d.path.strokeWidth; });
+                        
+                        return d.path.commands.slice(0, 1); })
+                      .attr("d", function(d) 
+                        { glyphResult = glyphInterpret(d); return glyphResult[0]; })
+                      .style("stroke-dasharray", function(d) 
+                        { return this.getTotalLength(); })
+                      .style("stroke-dashoffset", function(d)
+                        { return 0; })
+                      .transition()
+                        .ease(d3.easeLinear)
+                        .duration(2000)
+                        .on("start", function() { addStroke(this, 2); });
+
+      var lowerStrokes = lowerGlyphs.append("path").datum(function(d, i) 
+                      { 
+                        d3.select(this).style("fill", function(d) { return d.path.fill; })
+                        .style("fill-opacity", 0)
+                        .style("stroke", function(d) { return d.path.stroke; })
+                        .style("stroke-width", function(d) { return d.path.strokeWidth; });
+                        
+                        return d.path.commands.slice(0, 1); 
+                      })
+                      .attr("d", naiveLine)
+                      .style("stroke-dasharray", function(d) 
+                        { return 1; })
+                      .style("stroke-dashoffset", function(d)
+                        { return 0; })
+                      .transition()
+                        .ease(d3.easeLinear)
+                        .duration(2000)
+                        .on("start", function() { lineMethod(this, 2); });
+
+      function addStroke(path, strokeIter)
+      {          
+        var styleInfo = d3.select(path).style("stroke-dasharray");
+        var glyphResult;
+        d3.select(path).datum(function(d, i)
+                        {
+                          var parentData = d3.select(this.parentNode).datum();
+                          if(parentData.path.commands.length < strokeIter)
+                            { d3.select(path).interrupt(); }
+                          return parentData.path.commands.slice(0, strokeIter);
+                        })
+            .attr("d", function(d) { glyphResult = glyphInterpret(d); return glyphResult[0]; })
+            .style("stroke-dasharray", function(d) 
+              { console.log("RawPathLength: " + this.getTotalLength()); 
+                console.log("WithGaps: " + (this.getTotalLength() + glyphResult[1]));
+              return this.getTotalLength(); })
+            .style("stroke-dashoffset", function(d) 
+              { return this.getTotalLength() - styleInfo; });
+        
+        var activeTrans = d3.active(path);
+        if(activeTrans != null)
+        {
+          activeTrans
+          //.style("stroke-dasharray", 5)
+          .style("stroke-dashoffset", function(d) { return 0; })
+        .transition()  
+          .ease(d3.easeLinear)
+          .duration(2000)
+          .on("start", function() { addStroke(this, strokeIter+1); });
+        }
+        else
+          d3.select(path).style("stroke-dashoffset", function(d) { return 0; });           
+      }
+
+      function glyphInterpret(datum)
+      {
+          var path = d3.path();
+          var moveLength = 0;
+          var pathLength = 0;
+          for(var i  = 0; i < datum.length; i++)
+          {
+              var point = datum[i];
+              if(i != 0) //Only save distances to Move symbols
+              {
+                pathLength += Math.sqrt(Math.pow(pointX - x(point.x), 2) + Math.pow(pointY - y(point.y), 2));
+                if(point.type === 'M')
+                {
+                  console.log("Register move");
+                  moveLength += Math.sqrt(Math.pow(pointX - x(point.x), 2) + Math.pow(pointY - y(point.y), 2));
+                }
+              }
+              
+              var pointX = x(point.x);
+              var pointY = y(point.y);
+
+              switch(point.type)
+              {
+                case 'M':
+                  path.moveTo(pointX, pointY);
+                  break;
+                case 'L':
+                  path.lineTo(pointX, pointY);
+                  break ;
+                case 'Q':
+                path.quadraticCurveTo(x(point.x1), y(point.y1), pointX, pointY);
+                  break;
+                case 'C':
+                path.bezierCurveTo(x(point.x1), y(point.y1), 
+                      x(point.x2), y(point.y2), pointX, pointY);
+                  break;
+                default:                                    
+                  path.closePath();
+              }
+          }
+        console.log("Total path Length: " + pathLength);
+        return [path.toString(), moveLength];
+      }
+
+function lineMethod(path, strokeIter)
+      {
+        var styleInfo = d3.select(path).style("stroke-dasharray");
+        d3.select(path).datum(function(d, i)
+                        {
+                          var parentData = d3.select(this.parentNode).datum();
+                          if(parentData.path.commands.length < strokeIter)
+                            { d3.select(path).interrupt(); }
+                          return parentData.path.commands.slice(0, strokeIter);
+                        })
+            .attr("d", naiveLine)
+            .style("stroke-dasharray", function(d) { return this.getTotalLength(); })
+            .style("stroke-dashoffset", function(d) 
+              { return this.getTotalLength() - styleInfo; });
+        
+        var activeTrans = d3.active(path);
+        if(activeTrans != null)
+        {
+          activeTrans
+          .style("stroke-dashoffset", function(d) { return 0; })
+        .transition()  
+          .ease(d3.easeLinear)
+          .duration(2000)
+          .on("start", function() { lineMethod(this, strokeIter+1); });
+        }  
+          //.style("stroke", function(d) 
+          //  { if (strokeIter % 2 === 0) return 'blue'; else return 'red';})
+      }*/

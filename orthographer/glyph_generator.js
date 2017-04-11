@@ -9,7 +9,7 @@
 	S -> MQ
 	s -> MC
 */
-function generateGlyph(strokeNum, counter, unicode)
+function generateGlyph(strokeNum, counter)
 {
 	var glyphPath = new opentype.Path();
 	var pathList = []; 
@@ -31,9 +31,9 @@ function generateGlyph(strokeNum, counter, unicode)
 	var glyph = new opentype.Glyph(
 	{
 		name: 'glyph '+counter,
-        unicode: unicode,
+        unicode: counter,
         index: counter,
-        advanceWidth: glyphScale,
+        advanceWidth: GLYPH_SCALE,
         path: glyphPath
 	});
 	glyph.strokeData = pathList;
@@ -75,7 +75,7 @@ function addStroke(selection, width)
 	path.start = start;
 	path.end = end;
 	
-	path.command = stroke[0];
+	path.type = stroke[0];
 	path.startPos = stroke[1];
 	path.startNeg = stroke[2];
 	path.endPos = stroke[3];
@@ -90,7 +90,8 @@ function addContour(path, glyphPath)
 {
 	glyphPath.moveTo(path.startNeg.x, path.startNeg.y);
 	glyphPath.lineTo(path.startPos.x, path.startPos.y);
-	switch(path.command)
+
+	switch(path.type)
 	{
 		case 'L':
 			glyphPath.lineTo(path.endPos.x, path.endPos.y);
@@ -118,12 +119,12 @@ function addContour(path, glyphPath)
 
 function RandomInsideBox()
 {
-	return (new Victor().randomize(new Victor(0, glyphScale), new Victor(glyphScale, 0)));
+	return (new Victor().randomize(new Victor(0, GLYPH_SCALE), new Victor(GLYPH_SCALE, 0)));
 }
 
 //Flip y point for computer graphics fuckery - float y value
 function MirrorY(y)
 {
-	return glyphScale - y;
+	return GLYPH_SCALE - y;
 }
 

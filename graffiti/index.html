@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset=utf-8>
+    <title>Sigil</title>
+    <style>
+      html, body { width: 100%; height: 100%; margin: 0px; }
+      path { fill:black; fill-opacity:0.0; 
+        stroke: #000; stroke-width: 1px; stroke-opacity: 1; pointer-events: none;}
+      line { stroke: #000; stroke-width: 3px; stroke-opacity: 0; pointer-events: none;}
+    </style>
+  </head>
+  <body>
+    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="graffiti_viewer.js"></script>
+    <script>
+
+    var margin = {top: 40, right: 40, bottom: 40, left: 40},
+                      mWidth = 1200, 
+                      mHeight = 800;
+
+    var canvas = d3.select("body").append("svg")
+              .attr("class", "container")
+              .attr("x", margin.left)
+              .attr("y", margin.top)
+              .attr("width", mWidth)
+              .attr("height", mHeight);
+      
+     var graffiti_viewer = new Viewer();
+     graffiti_viewer.RenderTag();
+
+    </script>
+  </body>
+</html>

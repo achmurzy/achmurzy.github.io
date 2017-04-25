@@ -1,3 +1,16 @@
+function baseLine(length)
+{
+	var start = RandomInsideBox();
+	var end = start.clone();
+	var dir = RandomInsideBox().normalize();
+	if(!InsideBox(end.add(dir.multiply(new Victor(length, length)))))
+	{
+		end = start.clone();
+		dir = RandomInsideBox().normalize();
+	}
+	return [start, end];
+}
+
 //Returns two points and a command 'L'
 function generateLine(start, end, width)
 {
@@ -18,12 +31,6 @@ function generateLine(start, end, width)
 	return ['L', spos, sneg, pos, neg];
 }
 
-function generateFlatLine()
-{
-	var end = RandomInsideBox();
-	return ['L', end];
-}
-
 function perpindicularLine(vector, left_handed)
 {
 	if(left_handed)
@@ -32,11 +39,28 @@ function perpindicularLine(vector, left_handed)
 		return new Victor(-vector.y, vector.x);	
 }
 
+function baseQuadratic(length)
+{
+	var dir = RandomInsideBox().normalize();
+	var line = baseLine(length);
+	var midDir = line[1].clone().subtract(line[0]).normalize().multiply(length/2);
+	var mid = line[0].clone().add(midDir);
+	var cp = mid.clone();
+
+	var proportion = Math.random();
+	while(!InsideBox(cp.add(dir.multiply(length*proportion))))
+	{
+		cp = mid.clone();
+		proportion = Math.random();
+		dir = RandomInsideBox().normalize();
+	}
+	return [line[0], line[1], cp];
+}
+
 //Returns four points and a command 'Q'
 function generateQuadratic(start, end, control_point, width)
 {	
 	var perpStart = perpindicularQuadratic([start, control_point, end], 0, true).normalize();
-	var perpCp = perpStart.clone();
 
 	var spos = start.clone();
 	spos.add(new Victor(perpStart.x * width, perpStart.y * width));
@@ -44,13 +68,14 @@ function generateQuadratic(start, end, control_point, width)
 	sneg.add(new Victor(perpStart.x * -width, perpStart.y * -width));
 
 	var perpEnd = perpindicularQuadratic([start, control_point, end], 1, true).normalize();
-	perpCp.add(perpEnd);
 
 	var pos = end.clone();
 	pos.add(new Victor(perpEnd.x * width, perpEnd.y * width));
 	var neg = end.clone();
 	neg.add(new Victor(perpEnd.x * -width, perpEnd.y * -width));
 
+	var perpCp = perpStart.clone();	//Not sure if valid
+	perpCp.add(perpEnd);
 	perpCp = perpCp.normalize();
 	var cpos = control_point.clone();
 	cpos.add(new Victor(perpCp.x * width * 2, perpCp.y * width * 2));
@@ -81,6 +106,31 @@ function quadraticDerivative(quad, t)
 	t2 = new Victor(end.x * 2 * t, end.y * 2 * t);
 
 	return t1.add(t2);
+}
+
+function baseCubic(line)
+{
+	var dir = RandomInsideBox().normalize();
+	var line = baseLine(length);
+	var midDir = line[1].clone().subtract(line[0]).normalize().multiply(length/2);
+	var mid = line[0].clone().add(midDir);
+	var cp1 = mid.clone();
+	var cp2 = mid.clone();
+
+	var proportion = Math.random();
+	while(!InsideBox(cp1.add(dir.multiply(length*proportion))))
+	{
+		cp1 = mid.clone();
+		proportion = Math.random();
+		dir = RandomInsideBox().normalize();
+	}
+	while(!InsideBox(cp2.add(dir.multiply(length*proportion))))
+	{
+		cp2 = mid.clone();
+		proportion = Math.random();
+		dir = RandomInsideBox().normalize();
+	}
+	return [line[0], line[1], cp1, cp2];
 }
 
 //Returns six points and a command 'C'

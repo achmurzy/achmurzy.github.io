@@ -5,7 +5,9 @@
     <title>Codex</title>
     <style>
       html, body { width: 100%; height: 100%; margin: 0px; }
-      path { fill:black; fill-opacity:0.0; stroke: #000; stroke-width: 1px; stroke-opacity: 1;}
+      path { fill:black; fill-opacity:0.0; 
+        stroke: #000; stroke-width: 1px; stroke-opacity: 1; pointer-events: none;}
+      line { stroke: #000; stroke-width: 3px; stroke-opacity: 0; pointer-events: none;}
     </style>
   </head>
   <body>
@@ -14,6 +16,7 @@
     <script src="victor.min.js"></script>
     <script src="glyph_generator.js"></script>
     <script src="panel_controller.js"></script>
+    <script src="panel_parameters.js"></script>
     <script src="primitive_strokes.js"></script>
     <script src="orthographer.js"></script>
     <script src="font_creator.js"></script>
@@ -33,27 +36,49 @@
               .attr("width", mWidth)
               .attr("height", mHeight);
       
-      //Various state variables for generation panel
-      var strokeData = [];  //contains custom stroke data
-      var drawGroup = canvas.append("g")
-                .attr("x", 0)
-                .attr("y", 0);
-      var glyphPanel = new Panel("draw", strokeData, drawGroup, "green");
+      var headerParams = new DrawParameters(0, 0, 900, 10, 10, "white", 2, 1000, 10);
+     // var headerGlyphs = new GlyphParameters(1, 4);
+     // var headerPanel = new Panel("header", headerParams, headerGlyphs);
+     // headerPanel.firehose = true;
+     // headerPanel.inspect = false;
+      
+      var leftParams = new DrawParameters(0, headerParams.height, 10, 400, 10, "white", 2, 1000, 10);
+      //var leftGlyphs = new GlyphParameters(1, 4);
+      //var leftPanel = new Panel("left", leftParams, leftGlyphs);
+      //leftPanel.firehose = true;
+      //leftPanel.inspect = false;
 
-      //Various state variables for font panel
-      var alphabet = [];
-      var alphabetGroup = canvas.append("g")
-                .attr("x", 0)
-                .attr("y", 0)
-                .attr("transform", "translate("+(glyphPanel.width+100)+","+0+")");
-      var alphabetPanel = new Panel("font", alphabet, alphabetGroup, "blue");
+      var rightParams = 
+        new DrawParameters(headerParams.width, headerParams.height, 10, 400, 10, "white", 2, 1000, 10);
+      //var rightGlyphs = new GlyphParameters(1, 4);
+      //var rightPanel = new Panel("right", rightParams, rightGlyphs);
+      //rightPanel.firehose = true;
+      //rightPanel.inspect = false;
+
+      var footerParams = 
+        new DrawParameters(0, leftParams.height+leftParams.y, 900, 10, 10, "white", 2, 1000, 100);
+      //var footerGlyphs = new GlyphParameters(1, 4);
+      //var footerPanel = new Panel("footer", footerParams, footerGlyphs);
+      //footerPanel.firehose = true;
+      //footerPanel.inspect = false;
+
+      var drawParams = 
+        new DrawParameters(leftParams.width, headerParams.height, 400, 400, 50, "green", 4, 100, 50);
+      var drawGlyphs = new Generator(['L'], 2, 5, 50, 0, 250, 0, false);
+      var drawPanel = new Panel("draw", drawParams, drawGlyphs);
+
+      var alphabetParams = new DrawParameters(leftParams.width+drawParams.width+50, headerParams.height, 400, 600, 50, "blue", 2, 0, 0);
+      var alphabetGlyphs = new Generator();
+      var alphabetPanel = new Panel("font", alphabetParams, alphabetGlyphs);
       alphabetPanel.toggleGeneration();
+      alphabetPanel.fullButton.on("click", function() { buildFont(); });
+      //alphabetPanel.showFullButton();
 
-      canvas.append("rect")
+      /*canvas.append("rect")
         .attr("fill", "red")
         .attr("x", 1000)
         .attr("width", 100)
-        .attr("height", 100).on("click", function() { buildFont(); });
+        .attr("height", 100).on("click", function() { buildFont(); });*/
 
     </script>
   </body>

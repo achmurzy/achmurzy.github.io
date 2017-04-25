@@ -9,18 +9,51 @@
 	S -> MQ
 	s -> MC
 */
-function generateGlyph(strokeNum, counter)
+
+function Generator(types, min, max, width, wvariance, length, lvariance, connect)
+{
+	this.strokeTypes = types;
+	this.minStrokes = min;
+	this.maxStrokes = max;
+
+	this.strokeLength = length;
+	if(lvariance > length)
+		lvariance = length;
+	this.lengthVariance = lvariance;
+	this.strokeWidth = width;
+	if(wvariance > width)
+		wvariance = width;
+	this.widthVariance = wvariance;
+	
+	this.connectProbability = connect;
+}
+
+Generator.prototype.generateGlyph = function(counter)
 {
 	var glyphPath = new opentype.Path();
 	var pathList = []; 
-	colors = ['red', 'blue', 'green', 'yellow', 'magenta', 'cyan', 'orange', 'purple'];
-
+	var colors = ['red', 'blue', 'green', 'yellow', 'magenta', 'cyan', 'orange', 'purple'];
+	var strokeNum = this.minStrokes + Math.floor(this.maxStrokes * Math.random());
 	for(var i = 0; i < strokeNum; i++)
 	{
-		var randomStroke = Math.floor(Math.random() * 3);
-		var strokeWidth = (Math.random() * 25) + 10;
+		var randomStroke = this.strokeTypes[Math.floor(Math.random() * this.strokeTypes.length)];
+		console.log(randomStroke);
+		var varyW = Math.random() * this.widthVariance;
+		var varyL = Math.random() * this.lengthVariance;
+		var strokeWidth, strokeLength;
+		if(Math.floor(Math.random()*2))
+		{
+			strokeWidth = this.strokeWidth + varyW;
+		}else
+			{strokeWidth = this.strokeWidth - varyW;}
 
-		var newPath = addStroke(randomStroke, strokeWidth);
+		if(Math.floor(Math.random()*2))
+		{
+			strokeLength = this.strokeLength + varyL;
+		}else
+			{strokeLength = this.strokeLength - varyL;}
+
+		var newPath = this.addStroke(randomStroke, strokeWidth, strokeLength);
 		var colorIndex = Math.floor(Math.random() * colors.length);
 		newPath.color = colors[colorIndex];
 		colors.splice(colorIndex, 1);
@@ -40,40 +73,43 @@ function generateGlyph(strokeNum, counter)
 	return glyph;
 }
 
-function addStroke(selection, width)
+Generator.prototype.addStroke = function(selection, width, length)
 {
 	var stroke = [];
 	path = new opentype.Path();
-	start = RandomInsideBox();
-	end = RandomInsideBox();
 	switch(selection)
 	{
-		case 0:
-			stroke = generateLine(start, end, width);
+		case 'L':
+		console.log("Making line");
+			var line = baseLine(length);
+			path.start = line[0];
+			path.end = line[1];
+			stroke = generateLine(line[0], line[1], width);
 			break;
-		case 1:
-			var control_point = RandomInsideBox();
-			stroke = generateQuadratic(start, end, control_point, width);
+		case 'Q':
+			var quad = baseQuadratic(length);
+			path.start = quad[0];
+			path.end = quad[1];
+			path.cp1 = quad[2];
+			stroke = generateQuadratic(quad[0], quad[1], quad[2], width);
 			path.cp1Pos = stroke[5];
 			path.cp1Neg =  stroke[6];
-			path.cp1 = control_point;
 			break;
-		case 2:
-			var control_point_1 = RandomInsideBox();
-			var control_point_2 = RandomInsideBox();
-			stroke = generateCubic(start, end, control_point_1, control_point_2, width);
-			path.cp1 = control_point_1;
-			path.cp2 = control_point_2;
+		case 'C':
+			var cube = baseCubic(length);
+			path.start = cube[0];
+			path.end = cube[1];
+			path.cp1 = cube[2];
+			path.cp2 = cube[3];
+			stroke = generateCubic(cube[0], cube[1], cube[2], cube[3], width);
 			path.cp1Pos = stroke[5];
-			path.cp1Neg =  stroke[6];
+			path.cp1Neg = stroke[6];
 			path.cp2Pos = stroke[7];
 			path.cp2Neg = stroke[8];
 			break;
 		default:
 			console.log("Invalid stroke generation selection");
 	}
-	path.start = start;
-	path.end = end;
 	
 	path.type = stroke[0];
 	path.startPos = stroke[1];
@@ -128,3 +164,7 @@ function MirrorY(y)
 	return GLYPH_SCALE - y;
 }
 
+function InsideBox(point) //Doesnt work with while loopp
+{
+	return (point.x > 0 && point.x < GLYPH_SCALE && point.y > 0 && point.y < GLYPH_SCALE);
+}

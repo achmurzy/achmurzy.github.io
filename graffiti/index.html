@@ -16,8 +16,8 @@
     <script>
 
     var margin = {top: 40, right: 40, bottom: 40, left: 40},
-                      mWidth = 1200, 
-                      mHeight = 800;
+                      mWidth = 800, 
+                      mHeight = 600;
 
     var canvas = d3.select("body").append("svg")
               .attr("class", "container")
@@ -26,8 +26,11 @@
               .attr("width", mWidth)
               .attr("height", mHeight);
       
-     var graffiti_viewer = new Viewer();
+     var graffiti_viewer = new Viewer(canvas, "http://000000book.com/data/random.json?callback={callback}");
      graffiti_viewer.RenderTag();
+
+     var sampleViewer = new Viewer(canvas, "sample.json");
+     //sampleViewer.RenderTag();
 
     </script>
   </body>

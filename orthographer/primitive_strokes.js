@@ -1,12 +1,20 @@
-function baseLine(length)
+function baseLine(length, connectStart=null)
 {
-	var start = RandomInsideBox();
+	var start;
+	if(connectStart != null)
+		start = connectStart;
+	else
+		start = RandomInsideBox();
 	var end = start.clone();
-	var dir = RandomInsideBox().normalize();
-	if(!InsideBox(end.add(dir.multiply(new Victor(length, length)))))
+	var dir = RandomInsideBox().subtract(end).normalize();
+	dir.multiply(new Victor(length, length));
+	end.add(dir);
+	while(!InsideBox(end))
 	{
 		end = start.clone();
-		dir = RandomInsideBox().normalize();
+		dir = RandomInsideBox().subtract(end).normalize();
+		dir.multiply(new Victor(length, length));
+		end.add(dir);
 	}
 	return [start, end];
 }
@@ -39,26 +47,27 @@ function perpindicularLine(vector, left_handed)
 		return new Victor(-vector.y, vector.x);	
 }
 
-function baseQuadratic(length)
+function parseLine(string) //Takes two points off the string for start and end points
 {
-	var dir = RandomInsideBox().normalize();
-	var line = baseLine(length);
-	var midDir = line[1].clone().subtract(line[0]).normalize().multiply(length/2);
-	var mid = line[0].clone().add(midDir);
-	var cp = mid.clone();
+	
+}
 
-	var proportion = Math.random();
-	while(!InsideBox(cp.add(dir.multiply(length*proportion))))
+function baseQuadratic(length, connectStart=null)
+{
+	var line = baseLine(length, connectStart);
+	var cp = RandomInsideBox();
+	var qLength = quadraticLength(line[0], cp, line[1]);
+	while(qLength > length*2)
 	{
-		cp = mid.clone();
-		proportion = Math.random();
-		dir = RandomInsideBox().normalize();
+		//console.log(qLength);
+		cp = RandomInsideBox();				
+		qLength = quadraticLength(line[0], cp, line[1]);
 	}
-	return [line[0], line[1], cp];
+	return [line[0], cp, line[1]];
 }
 
 //Returns four points and a command 'Q'
-function generateQuadratic(start, end, control_point, width)
+function generateQuadratic(start, control_point, end, width)
 {	
 	var perpStart = perpindicularQuadratic([start, control_point, end], 0, true).normalize();
 
@@ -108,33 +117,45 @@ function quadraticDerivative(quad, t)
 	return t1.add(t2);
 }
 
-function baseCubic(line)
-{
-	var dir = RandomInsideBox().normalize();
-	var line = baseLine(length);
-	var midDir = line[1].clone().subtract(line[0]).normalize().multiply(length/2);
-	var mid = line[0].clone().add(midDir);
-	var cp1 = mid.clone();
-	var cp2 = mid.clone();
+function quadraticLength(p0, p1, p2) {
+    var a = new Victor(
+        p0.x - 2 * p1.x + p2.x,
+        p0.y - 2 * p1.y + p2.y
+    );
+    var b = new Victor(
+        2 * p1.x - 2 * p0.x,
+        2 * p1.y - 2 * p0.y
+    );
+    var A = 4 * (a.x * a.x + a.y * a.y);
+    var B = 4 * (a.x * b.x + a.y * b.y);
+    var C = b.x * b.x + b.y * b.y;
 
-	var proportion = Math.random();
-	while(!InsideBox(cp1.add(dir.multiply(length*proportion))))
+    var Sabc = 2 * Math.sqrt(A+B+C);
+    var A_2 = Math.sqrt(A);
+    var A_32 = 2 * A * A_2;
+    var C_2 = 2 * Math.sqrt(C);
+    var BA = B / A_2;
+
+    return (A_32 * Sabc + A_2 * B * (Sabc - C_2) + (4 * C * A - B * B) * Math.log((2 * A_2 + BA + Sabc) / (BA + C_2))) / (4 * A_32);
+}
+
+function baseCubic(length, connectStart=null)
+{
+	var line = baseLine(length);
+	var cp1 = RandomInsideBox();
+	var cp2 = RandomInsideBox();
+
+	while(flatCubicLength([line[0], cp1, cp2, line[1]]) > length*2)
 	{
-		cp1 = mid.clone();
-		proportion = Math.random();
-		dir = RandomInsideBox().normalize();
+		cp1 = RandomInsideBox();
+		cp2 = RandomInsideBox();
 	}
-	while(!InsideBox(cp2.add(dir.multiply(length*proportion))))
-	{
-		cp2 = mid.clone();
-		proportion = Math.random();
-		dir = RandomInsideBox().normalize();
-	}
-	return [line[0], line[1], cp1, cp2];
+
+	return [line[0], cp1, cp2, line[1]];
 }
 
 //Returns six points and a command 'C'
-function generateCubic(start, end, control_point_1, control_point_2, width)
+function generateCubic(start, control_point_1, control_point_2, end, width)
 {
 	var spos = start.clone();
 	var sneg = start.clone();
@@ -197,4 +218,14 @@ function cubicDerivative(cube, t)
 	var t3 = new Victor(3*t*t*end.x, 3*t*t*end.y);
 
 	return t1.add(t2.add(t3));
+}
+
+function flatCubicLength(points)
+{
+	var sum = 0;
+	for(var i = 1; i < 4; i++)
+	{
+		sum += points[i-1].distance(points[i]);
+	}
+	return sum;
 }

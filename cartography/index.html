@@ -5,6 +5,8 @@
     <title>Biocartography</title>
     <style>
       html, body { width: 100%; height: 100%; margin: 0px; }
+      circle { pointer-events: all; }
+      path { pointer-events: none; }
     </style>
   </head>
   <body>
@@ -26,11 +28,13 @@
                 .attr("height", (mHeight) + (margin.bottom));
 
       var projection = d3.geoAlbers()
-                            .scale(500);
+                            .scale(mWidth);
       var geoPath = d3.geoPath()
                         .projection(projection);
-
-      d3.json("Populus_tremuloides/populus_shape.json", function(error, range)
+      var grid_res=5
+      var grid = "NA_Grid_Shape_"+grid_res+".json";
+      var species = "Chilopsis_linearis";
+      d3.json(grid, function(error, range)
       {
         if(error) return console.error(error);
 
@@ -40,8 +44,124 @@
             .attr("d", geoPath)
             .attr("vector-effect", "non-scaling-stroke")
             .style("stroke", "black")
-            .style("stroke-width", 2);
-      })
+            .style("stroke-width", 2)
+            .style("fill-opacity", 0);
+      });
+
+      d3.json("NA_coast.json", function(error, range)
+      {
+        if(error) return console.error(error);
+
+        var features = range.features;
+        canvas.selectAll("path").data(features).enter().
+          append("path")
+            .attr("d", geoPath)
+            .attr("vector-effect", "non-scaling-stroke")
+            .style("stroke", "black")
+            .style("stroke-width", 2)
+            .style("fill-opacity", 0);
+      });
+
+      //species = "Populus_tremuloides/populus_shape.json";
+
+      d3.json(species+"/range.json", function(error, range)
+      {
+        if(error) return console.error(error);
+
+        var features = range.features;
+        canvas.selectAll("path").data(features).enter().
+          append("path")
+            .attr("d", geoPath)
+            .attr("vector-effect", "non-scaling-stroke")
+            .style("stroke", "black")
+            .style("stroke-width", 2)
+            .style("fill", "green")
+            .style("fill-opacity", 0.25);
+      });
+
+      d3.csv(species+"/obs.csv", function(observe)
+      {
+        canvas.selectAll("circle").data(observe).enter()
+          .append("circle")
+            .attr("transform", function(d) 
+              {return "translate(" + projection([d.longitude,d.latitude]) + ")";})
+            .attr("r", grid_res)
+            .style("stroke", "black")
+            .style("stroke-width", 1)
+            .style("fill", "red")
+            .style("fill-opacity", 0)
+            .on("mouseover", function(d, i) { d3.select(this)
+                                              .transition()
+                                                .attr("r", grid_res*2)
+                                                .style("stroke", "red")
+                                                .style("fill-opacity", 0.5); })
+            .on("mouseout", function(d, i) { d3.select(this)
+                                              .transition()
+                                                .attr("r", grid_res)
+                                                .style("stroke", "black")
+                                                .style("fill-opacity", 0); });
+
+      }); 
+
+      //See Phillips et al. 2006
+
+      //We are building a probability distribution P (map of real values 0->1)
+      // over the set of grid cells in our domain X. If an occurence is within a 
+      // grid cell, the cell has a value of 1. Accordingly, MaxEnt models the
+      //probability P(x = 1 | y), to 'guess' which grid cells without occurences
+      //may be contained within the range.
+
+      //The entropy of a probability distribution is given as:
+      //H = -SUM(p(x) * ln(p(x)))
+
+      //This is a measure of 'disorder' - in distributions where the probability 
+      //of seeing a sample is 1, entropy is 0: there are no surprises.
+      //This intuition surrounding 'surpise' within the sample is the motivation
+      //behind the use of entropy. We are prepared to be surprised and assume nothing
+
+      //Feature functions F are real-valued over the same domain as P.
+      //Expectation is a weighted sum of P and F: E = SUM(P(x) * F(x)) for all x in X
+      
+      //We are forced to compute the expectation using a sample of X, our observations
+      //Not knowing P, we write expectation as E = (1/m)SUM(F(x)) for m subsamples of X
+      //Presumably it can be proven that the 'empiricial average' approximates the 
+      //expectation, probably as n(m) -> INF, (number of samples goes to infinity)
+
+      //What follows is an iterative algorithm for computing the underlying distribution
+      //P subject to the following constraints:
+      //-Maximize H
+      //-mean of E == mean of F
+      //We can use the familiar form P(x) = e^(LAM dot f(x)) / Z as a general solution, and
+      //the distribution is characterized by the weight-vector LAM. Remember that the dot is
+      //essentially a way of indexing the weight vector based on the feature. The iterative 
+      //procedure consists of optimizing the feature-weight vector such that H is maximized.
+
+      //Some iterative procedures end when quantities defined on the current form of the
+      //solution, known as 'loss functions' reach a certain threshold of acceptibility.
+      //A loss function for this problem can take two equivalent forms:
+      //-Maximizing the likelihood of P(x) given m points from X
+      //-Minimizing the negative log-likelihood of P(x) given m points from X
+
+      //This is as far as we need to go. We use an iterative procedure to feed data from
+      //the csv into a statistical model that ultimately builds P. Then we define a threshold
+      //of acceptable values within P, and sample the model over our landscape to define
+      //lat/lon that meet our criteria as acceptable parts of the predicted range. 
+
+      //If this isn't completely intractable, we could expose parameters of the algorithm
+      //to the UI, and have d3 redraw the map as users adjust parameters to see how
+      //over-fitting and strangling can occur. A number of different algorithms are available
+      //for optimizing the function above, so that's up to us. Another choice to vary
+      //and play with. Read more about numerical optimization, gradient descent 
+
+      //-Find climate data. 
+      //-Need to run the simulation over grid cells - which means learning how to project
+      //a grid onto our data, and a lot of functions for dealing with a grid data structure
+
+      //-Need to implement an iterative descent algorithm. Simplest would be derivative of
+      //loss function. Find gradient, apply difference to weight vector
+
+      //And then you want to research how to IMPROVE this?! You need a complete understanding
+      //from first principles!! That's how research works !!
 
     </script>
   </body>

@@ -8,10 +8,21 @@
       path { fill:black; fill-opacity:0.0; 
         stroke: #000; stroke-width: 1px; stroke-opacity: 1; pointer-events: none;}
       line { stroke: #000; stroke-width: 3px; stroke-opacity: 0; pointer-events: none;}
+      text { pointer-events: none; }
+      .noselect 
+      {
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
+      }
     </style>
   </head>
   <body>
-    <script src="https://d3js.org/d3.v4.min.js"></script>
+    <script src="d3.min.js"></script>
     <script src="opentype.min.js"></script>
     <script src="victor.min.js"></script>
     <script src="glyph_generator.js"></script>
@@ -35,51 +46,45 @@
               .attr("y", margin.top)
               .attr("width", mWidth)
               .attr("height", mHeight);
-      
-      var headerParams = new DrawParameters(0, 0, 900, 10, 10, "white", 2, 1000, 10);
-     // var headerGlyphs = new GlyphParameters(1, 4);
-     // var headerPanel = new Panel("header", headerParams, headerGlyphs);
-     // headerPanel.firehose = true;
-     // headerPanel.inspect = false;
-      
-      var leftParams = new DrawParameters(0, headerParams.height, 10, 400, 10, "white", 2, 1000, 10);
-      //var leftGlyphs = new GlyphParameters(1, 4);
-      //var leftPanel = new Panel("left", leftParams, leftGlyphs);
-      //leftPanel.firehose = true;
-      //leftPanel.inspect = false;
 
-      var rightParams = 
-        new DrawParameters(headerParams.width, headerParams.height, 10, 400, 10, "white", 2, 1000, 10);
-      //var rightGlyphs = new GlyphParameters(1, 4);
-      //var rightPanel = new Panel("right", rightParams, rightGlyphs);
-      //rightPanel.firehose = true;
-      //rightPanel.inspect = false;
+      var PANEL_WIDTH = 400;
+      var PANEL_HEIGHT = 100;
+      var BOX_SCALE = 50;
+      var colors = ["green", "yellow", "cyan", "magenta"];
+      var INSPECT_SCALE = 2;      
+      var GENERATION_RATE = 100;
+      var DRAW_SPEED = 50;
 
-      var footerParams = 
-        new DrawParameters(0, leftParams.height+leftParams.y, 900, 10, 10, "white", 2, 1000, 100);
-      //var footerGlyphs = new GlyphParameters(1, 4);
-      //var footerPanel = new Panel("footer", footerParams, footerGlyphs);
-      //footerPanel.firehose = true;
-      //footerPanel.inspect = false;
+      var panel_x = 10;
+      var GAP = 50;
+      var panel_y = 20;
+      function addPanel(num)
+      {
+        var newParams = 
+        new DrawParameters(panel_x, panel_y, PANEL_WIDTH, PANEL_HEIGHT, BOX_SCALE, colors[num], INSPECT_SCALE, GENERATION_RATE, DRAW_SPEED);
+        var newGlyphs = new Generator();
+        var newPanel = new Panel("draw", newParams, newGlyphs)
+        panel_y += (PANEL_HEIGHT + (BOX_SCALE*INSPECT_SCALE));
+      }
 
-      var drawParams = 
-        new DrawParameters(leftParams.width, headerParams.height, 400, 400, 50, "green", 4, 100, 50);
-      var drawGlyphs = new Generator(['L'], 2, 5, 50, 0, 250, 0, false);
-      var drawPanel = new Panel("draw", drawParams, drawGlyphs);
+      for(var i = 0 ; i < 4; i++)
+      {
+        addPanel(i);
+      }
 
-      var alphabetParams = new DrawParameters(leftParams.width+drawParams.width+50, headerParams.height, 400, 600, 50, "blue", 2, 0, 0);
+      var alphabetParams = new DrawParameters(800, 20, 200, 800, 50, "blue", 2, 0, 0);
       var alphabetGlyphs = new Generator();
       var alphabetPanel = new Panel("font", alphabetParams, alphabetGlyphs);
       alphabetPanel.toggleGeneration();
       alphabetPanel.fullButton.on("click", function() { buildFont(); });
-      //alphabetPanel.showFullButton();
-
-      /*canvas.append("rect")
-        .attr("fill", "red")
-        .attr("x", 1000)
-        .attr("width", 100)
-        .attr("height", 100).on("click", function() { buildFont(); });*/
-
+      /*alphabetPanel.fullButton.transition()
+      .duration(100)
+        .attr("height", alphabetPanel.drawParams.boxScale/4)
+        .on("end", function() { alphabetPanel.group.selectAll("line")
+                      .transition()
+                        .duration(100)
+                        .style("stroke-opacity", 1); });
+      */
     </script>
   </body>
 </html>

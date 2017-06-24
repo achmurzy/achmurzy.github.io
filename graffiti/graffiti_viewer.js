@@ -14,6 +14,8 @@ function Viewer(context, _url)
 	this.upX = false;
 	this.boundsX = 1;
 	this.boundsY = 1;
+
+	this.drawSpeed = 700;
 }
 
 Viewer.prototype.RenderTag = function()
@@ -32,7 +34,21 @@ Viewer.prototype.RenderTag = function()
 			.append("path")
 				.attr("d", function (d) { return _this.InterpretStrokeUpX(d.pt); })
 				.style("stroke", function(d) { return 0; })
-				.style("stroke-width", function(d) { return 1; });
+				.style("fill-opacity", 0)
+				.style("stroke-opacity", 0.0)
+				.style("stroke-width", function(d) { return 5; })
+				.style("stroke-dasharray", function(d) 
+          			{ return this.getTotalLength(); })
+        		.style("stroke-dashoffset", function(d) 
+          			{ return this.getTotalLength(); })
+        		.transition()
+		          .duration(_this.drawSpeed)
+		          .delay(function(d, i) { return _this.drawSpeed/2 * i; })
+		          .ease(d3.easeLinear)
+			          .style("fill-opacity", 0.0)
+			          .style("stroke-opacity", 1)
+			          .style("stroke-dashoffset", function(d) 
+			          { return 0+"px"; });
 		}
 		else
 		{
@@ -40,7 +56,22 @@ Viewer.prototype.RenderTag = function()
 			.append("path")
 				.attr("d", function (d) { return _this.InterpretStroke(d.pt); })
 				.style("stroke", function(d) { return 0; })
-				.style("stroke-width", function(d) { return 1; });
+				.style("fill-opacity", 0)
+				.style("stroke", "red")
+				.style("stroke-opacity", 0.0)
+				.style("stroke-width", function(d) { return 5; })
+				.style("stroke-dasharray", function(d) 
+          			{ return this.getTotalLength(); })
+        		.style("stroke-dashoffset", function(d) 
+          			{ return this.getTotalLength(); })
+        		.transition()
+		          .duration(_this.drawSpeed)
+		          .delay(function(d, i) { return _this.drawSpeed/2 * i; })
+		          .ease(d3.easeLinear)
+			          .style("fill-opacity", 0.0)
+			          .style("stroke-opacity", 1)
+			          .style("stroke-dashoffset", function(d) 
+			          { return 0+"px"; });
 		}
 	});
 }
@@ -54,6 +85,7 @@ Viewer.prototype.InterpretStroke = function(points)
 	{
 		stroke.lineTo(this.x(points[i].x), this.y(1-points[i].y));
 	}
+	stroke.moveTo(this.x(firstPoint.x), this.y(1-firstPoint.y));
 	return stroke.toString();
 }
 
@@ -66,6 +98,7 @@ Viewer.prototype.InterpretStrokeUpX = function(points)
 	{
 		stroke.lineTo(this.aY(this.y(points[i].y)), this.aX(this.x(1-points[i].x)));
 	}
+	stroke.moveTo(this.aY(this.y(firstPoint.y)), this.aX(this.x(1-firstPoint.x)));
 	return stroke.toString();
 }
 

@@ -121,13 +121,13 @@
 
       function parseTransform (a)
       {
-          var b={};
-          for (var i in a = a.match(/(\w+\((\-?\d+\.?\d*e?\-?\d*,?)+\))+/g))
-          {
-              var c = a[i].match(/[\w\.\-]+/g);
-              b[c.shift()] = c;
-          }
-          return b;
+        var b={};
+        for (var i in a = a.match(/(\w+\((\-?\d+\.?\d*e?\-?\d*,?)+\))+/g))
+        {
+            var c = a[i].match(/[\w\.\-]+/g);
+            b[c.shift()] = c;
+        }
+        return b;
       }
 
       //Helper for anonymously calling methods with a list of arguments
@@ -158,26 +158,23 @@
       //Transfer elements to the alphabet panel and disable inappropriate callbacks
       function alphabetize(gElement)
       {
+        if(alphabetPanel.glyphData.length > 0)
+          alphabetPanel.hideFullButton(alphabetPanel.glyphData.length-1);
         var glyphElement = d3.select(gElement);
         alphabetPanel.group.append(function() { return gElement; });
         alphabetPanel.glyphData.push(glyphElement.datum());
-        if(alphabetPanel.glyphsFull())
-        {
-          alphabetPanel.showFullButton();
-        }
-        else
-        {
-          console.log(alphabetPanel.drawParams.glyphsX());
-          console.log(alphabetPanel.drawParams.glyphsY());
-          console.log(alphabetPanel.glyphData.length);
-        }
+   
         alphabetPanel.group.select("g.draw").attr("class", "font").select("rect").on("click", function(d, i)
           { 
             var gElement = this.parentNode;           //Pass function reference with list of arguments
             alphabetPanel.clickFunction(d, i, gElement, partial(function(ap, i)
               {
+                if(alphabetPanel.glyphData.length === i)
+                  alphabetPanel.hideFullButton(alphabetPanel.glyphData.length-1);
                 d3.select(gElement).remove();
                 alphabetPanel.removeGlyph(ap, i); 
+                if(alphabetPanel.glyphData.length === i)
+                  alphabetPanel.showFullButton(alphabetPanel.glyphData.length-1);          
               }, alphabetPanel, alphabetPanel.glyphData.length-1)); //position is length of current dataset
           }).attr("fill", alphabetPanel.drawParams.boxColor);
         
@@ -192,6 +189,7 @@
                 return interpolateTransform(t, startTransform, endTransform);
               };
             });
+        alphabetPanel.showFullButton(alphabetPanel.glyphData.length-1);
       }
 
       function initGlyphData(glyphs, x, y)
@@ -352,4 +350,47 @@
           .filter(function(d, i) { return i === index;})
             .attr("d", function(d) 
               { var newPath = strokeInterpret(d.contours, x, y); return newPath; });
+      }
+
+      function parseGlyph(text)
+      {
+        //text = push first letter out 'M'
+        var glyphPath = new opentype.Path();
+        var pathList = []; 
+        var colors = ['red', 'blue', 'green', 'yellow', 'magenta', 'cyan', 'orange', 'purple', 'grey', 'black'];
+  
+        while(text[0] != 'M' && text.length > 0)
+        {
+          var newPath;
+          switch(text[0])
+          {
+            case 'L':
+              newparseLine(text);
+            break;
+            case 'Q':
+              parseQuadratic(text);
+            break;
+            case 'C':
+              parseCubic(text);
+            break;
+            default:
+              console.log("Failed to parse glyph string");
+            break;
+          }
+
+          var colorIndex = Math.floor(Math.random() * colors.length);
+          newPath.color = colors[colorIndex];
+          colors.splice(colorIndex, 1);
+      
+          pathList.push(newPath);
+        }
+        var glyph = new opentype.Glyph(
+        {
+          name: 'glyph '+counter,
+              unicode: counter,
+              index: counter,
+              advanceWidth: GLYPH_SCALE,
+              path: glyphPath
+        });
+        return glyph;
       }

@@ -4,10 +4,12 @@ function Panel(name, draw, glyph)
 
 	this.name = name;
 	this.drawParams = draw;
-    this.generator = glyph;
+  this.generator = glyph;
 
 	this.glyphData = [];
 	this.group = canvas.append("g").attr("transform", "translate("+this.drawParams.x+","+this.drawParams.y+")");
+
+  this.drawParams.createButton(this);
 
 	this.fullClick = false;
 	this.fullButton = this.group.append("rect")
@@ -22,7 +24,7 @@ function Panel(name, draw, glyph)
 							if(!_this.fullClick)
 							{
 								_this.fullClick = true;
-								_this.hideFullButton();
+								_this.hideFullButton((_this.drawParams.glyphsX()*_this.drawParams.glyphsY())-1);
 		    					_this.glyphData = [];
 		    					_this.expandedElement = Number.MAX_SAFE_INTEGER;
 								_this.toggleGeneration();
@@ -30,31 +32,37 @@ function Panel(name, draw, glyph)
 							
 						});
 						this.group.append("line")
+              .attr("class", "full")
 							.attr("x1", (3*this.drawParams.boxScale/4))
 							.attr("y1", this.drawParams.boxScale + this.drawParams.boxScale/8)
 							.attr("x2", this.drawParams.boxScale/4)
 							.attr("y2", this.drawParams.boxScale + this.drawParams.boxScale/8);
 						this.group.append("line")
+              .attr("class", "full")
 							.attr("x1", this.drawParams.boxScale - this.drawParams.boxScale/3)
 							.attr("y1", this.drawParams.boxScale)
 							.attr("x2", this.drawParams.boxScale - this.drawParams.boxScale/4)
 							.attr("y2", this.drawParams.boxScale + this.drawParams.boxScale/8);
 						this.group.append("line")
-							.attr("x1", this .drawParams.boxScale - this.drawParams.boxScale/3)
+							.attr("class", "full")
+              .attr("x1", this .drawParams.boxScale - this.drawParams.boxScale/3)
 							.attr("y1", this.drawParams.boxScale + this.drawParams.boxScale/4)
 							.attr("x2", this.drawParams.boxScale - this.drawParams.boxScale/4)
 							.attr("y2", this.drawParams.boxScale + this.drawParams.boxScale/8);
 
-	this.showFullButton = function() 
+  //These buttons were written hastily, and are sloppy and clogging the code.
+  //Totally unnatural, rushed bullshit.
+	this.showFullButton = function(index) 
 					{ 
 						var _this = this;
 						d3.select(this.fullButton).remove();
-						var lines = this.group.selectAll("line").remove();
+						var lines = this.group.selectAll("line.full").remove();
 						var lastElement = this.group.selectAll("g").filter(function(d, i) 
 						{
-							return i === (_this.drawParams.glyphsX()*_this.drawParams.glyphsY())-1;
+							return i === index;
 						});
 						lastElement.append(function() { return _this.fullButton._groups[0][0]; });
+
 						for(var i = 0; i < 3; i++)
 						{
 							lastElement.append(function () { return lines._groups[0][i]; });							
@@ -68,12 +76,12 @@ function Panel(name, draw, glyph)
 		    											.duration(100)
 		    											.style("stroke-opacity", 1); });
 					};
-	this.hideFullButton = function() 
+	this.hideFullButton = function(index) 
 					{	
 						var _this = this;
 						var lastElement = this.group.selectAll("g").filter(function(d, i) 
 						{
-							return i === (_this.drawParams.glyphsX()*_this.drawParams.glyphsY())-1;
+							return i === index;
 						});
 						d3.select(this.fullButton).remove();
 						var lines = lastElement.selectAll("line").remove();
@@ -100,10 +108,8 @@ function Panel(name, draw, glyph)
 
     this.firehose = false;
     this.inspect = true;
-	this.addGlyph = function()  //Can add functions here or with 'prototype' ; <-- just don't forget this
+	this.addGlyph = function(glyph)  //Can add functions here or with 'prototype' ; <-- just don't forget this
 	{
-		console.log("add");
-      	var glyph = this.generator.generateGlyph(this.glyphCounter);
       	this.glyphData.push(glyphToStrokes(glyph));
       	this.glyphCounter++;   
       	this.update();
@@ -116,18 +122,17 @@ function Panel(name, draw, glyph)
 	    	else
 	    	{
 	    		this.toggleGeneration();
-	    		this.showFullButton();
+	    		this.showFullButton((this.drawParams.glyphsX()*this.drawParams.glyphsY())-1);
 	    	}
     	} 
 	};
 
-	//Storing a member function as a callback requires some contortion
-	var addMethod = this.addGlyph;
 	var timeCall = function()
 		{ 
 			_this.totalTime += (d3.now() - _this.lastTime);
 	 		_this.lastTime = d3.now(); 
-	 		addMethod.call(_this); 
+      var glyph = _this.generator.generateGlyph(_this.glyphCounter);
+	 		_this.addGlyph(glyph);
 	 	};
 
 	this.timer = d3.interval(timeCall, this.drawParams.generationTime);
@@ -146,6 +151,18 @@ function Panel(name, draw, glyph)
     //Our own double-click call-back
     this.clicked = false;
     this.clickLength = 350; //milliseconds
+
+    this.generateTrainingData = function(size)
+    {
+    	var train = []
+    	for(var i = 0; i < size; i++)
+    	{
+    		var newGlyph = this.generator.trainGlyph(train);
+    		train.push.apply(train, newGlyph);
+    	}
+    	var dataString = JSON.stringify(train);
+    	download(dataString, "train.txt");
+    };
 }
 
 //General update pattern
@@ -156,7 +173,7 @@ Panel.prototype.update = function()
 	var _this = this;
 
 	//Use glyph index as a key function to uniquely identify glyphs
-    var glyphs = this.group.selectAll("g").data(this.glyphData, function(d, i) 
+    var glyphs = this.group.selectAll("g."+this.name).data(this.glyphData, function(d, i) 
           { if(d === undefined) console.log("Undefined: "+i); else return d.index; });
 
     glyphs.exit().remove();
@@ -265,7 +282,7 @@ Panel.prototype.clickSemantics = function(_this, gElement)
 		{ if(d3.select(this).attr("class") === "undrawn") drawing = true; });
 	if(!drawing)
 	{
-		_this.group.selectAll("g").each(function(d, i) //re-select elements in place
+		_this.group.selectAll("g."+_this.name).each(function(d, i) //re-select elements in place
 		{
 		  if(d.index === gSelect.datum().index)                    
 		  { positionIndex = i; }
@@ -283,7 +300,7 @@ Panel.prototype.doubleClickSemantics = function(_this, gElement)
 		{ if(d3.select(this).attr("class") === "undrawn") drawing = true; });
 	if(!drawing)
 	{
-        _this.group.selectAll("g").each(function(d, i) //Double-click
+        _this.group.selectAll("g."+_this.name).each(function(d, i) //Double-click
         {                	
           if(d.index === gSelect.datum().index)                    
           { positionIndex = i; }
@@ -334,7 +351,7 @@ Panel.prototype.inspectGlyph = function(gElement, i)
   Panel.prototype.transformGlyphs = function(positionFunction)
   {
   	var _this = this;
-    this.group.selectAll("g").each(function(d, i) 
+    this.group.selectAll("g."+this.name).each(function(d, i) 
     {
       var groupElement = d3.select(this);
       var startTransform = parseTransform(groupElement.attr("transform"));
@@ -382,9 +399,6 @@ Panel.prototype.inspectGlyph = function(gElement, i)
         {       
           if(i === panel.expandedElement)
           { 
-          	console.log(panel);
-          	console.log(panel.name);
-          	console.log(panel.drawParams.inspectScale);
             var transform = parseTransform(panel.positionGlyph(i, Number.MAX_SAFE_INTEGER));
             transform.scale = [panel.drawParams.inspectScale, panel.drawParams.inspectScale];
             return transform;

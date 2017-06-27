@@ -1,5 +1,5 @@
 
-function buildFont(glyphData, fontName="DateTime") //Take glyphs in the alphabet panel and write to opentype
+function buildFont(glyphData, fontName="codex_") //Take glyphs in the alphabet panel and write to opentype
       {
         var codex = [];
         alphabetPanel.group.selectAll("g").each(function(d, i) 
@@ -9,14 +9,15 @@ function buildFont(glyphData, fontName="DateTime") //Take glyphs in the alphabet
           codex.push(d.glyph);
         });
 
+        var date = new Date();
         if(codex.length > 0)
         {
           var font = new opentype.Font({
-          familyName: fontName,
+          familyName: fontName+date.toLocaleString(),
           styleName: 'Medium',
           unitsPerEm: GLYPH_SCALE,
-          ascender: 800,
-          descender: -200,
+          ascender: GLYPH_SCALE,
+          descender: 0,
           glyphs: codex });
         
           console.log(font);

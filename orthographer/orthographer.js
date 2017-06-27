@@ -150,9 +150,15 @@
         var controlPoints1 = glyph.selectAll("circle.cp1").attr("r", radius);
         var controlPoints2 = glyph.selectAll("circle.cp2").attr("r", radius);
 
+        var bbox = glyph.selectAll("circle.bbox").attr("r", radius);
+        var aWidth = glyph.select("circle.awidth").attr("r", radius);
+        var boundingLines = glyph.selectAll("line.bounds")
+          .style("stroke-width", 0.25 * radius);
+
         glyph.selectAll("path").transition()
           .style("fill", function(d) { if(up) return d.color; else return 'black'; })
           .style("stroke",function(d) { if(up) return d.color; else return 'black'; });
+
       }
 
       //Transfer elements to the alphabet panel and disable inappropriate callbacks
@@ -192,11 +198,13 @@
         alphabetPanel.showFullButton(alphabetPanel.glyphData.length-1);
       }
 
-      function initGlyphData(glyphs, x, y)
+      function initGlyphData(glyphs, x, y, panel)
       {
-        //Draw stroke elements for interactive editing
+              //Draw stroke elements for interactive editing
         var startPoints = glyphs.selectAll("circle.start").data(function(d, i)
-                            { return d.strokes; });
+                            { return d.strokes; })
+            .attr("cx", function(d) { return x(d.start.x); })
+            .attr("cy", function(d) { return y(d.start.y); });
         startPoints.enter()
           .append("circle")
             .attr("class", "start")
@@ -205,14 +213,16 @@
             .attr("r", 0)
             .style("fill", function(d) { return d.color; })
             .style("stroke", 'black')
-            .call(d3.drag().on("drag", function(d, i) { dragFunction(this, d3.event, i, x, y); }))
+            .call(d3.drag().on("drag", function(d, i) { dragFunction(this, d3.event, i, x, y, panel); }))
             .on("click", function(d)
               {
                 editFunction();
               });
 
         var endPoints = glyphs.selectAll("circle.end").data(function(d, i)
-                            { return d.strokes; });
+                            { return d.strokes; })
+            .attr("cx", function(d) { return x(d.end.x); })
+            .attr("cy", function(d) { return y(d.end.y); });
         endPoints.enter()
           .append("circle")
             .attr("class", "end")
@@ -221,11 +231,12 @@
             .attr("r", 0)
             .style("fill", function(d) { return d.color; })
             .style("stroke", 'black')
-            .call(d3.drag().on("drag", function(d, i) { dragFunction(this, d3.event, i, x, y); }))
+            .call(d3.drag().on("drag", function(d, i) { dragFunction(this, d3.event, i, x, y, panel); }))
             .on("click", function(d)
               {
                 editFunction();
               });
+
         //Select cubic and quadratic strokes
         var controlPoints1 = glyphs.selectAll("circle.cp1").data(function(d, i)
                             { 
@@ -238,7 +249,9 @@
                                   qcCollect.push(d.strokes[i]);
                                 }                               }
                               return qcCollect; 
-                            });
+                            })
+            .attr("cx", function(d) { return x(d.cp1.x); })
+            .attr("cy", function(d) { return y(d.cp1.y); });
         controlPoints1.enter()
           .append("circle")
             .attr("class", "cp1")
@@ -247,7 +260,7 @@
             .attr("r", 0)
             .style("fill", function(d) { return d.color; })
             .style("stroke", 'white')
-            .call(d3.drag().on("drag", function(d, i) { dragFunction(this, d3.event, d.index, x, y); }))
+            .call(d3.drag().on("drag", function(d, i) { dragFunction(this, d3.event, d.index, x, y, panel); }))
             .on("click", function(d)
               {
                 editFunction();
@@ -265,7 +278,9 @@
                                   cCollect.push(d.strokes[i]);
                                 }
                               }
-                              return cCollect; });
+                              return cCollect; })
+            .attr("cx", function(d) { return x(d.cp2.x); })
+            .attr("cy", function(d) { return y(d.cp2.y); });
         controlPoints2.enter()
           .append("circle")
             .attr("class", "cp2")
@@ -274,11 +289,99 @@
             .attr("r", 0)
             .style("fill", function(d) { return d.color; })
             .style("stroke", 'white')
-            .call(d3.drag().on("drag", function(d, i) { dragFunction(this, d3.event, d.index, x, y); }))
+            .call(d3.drag().on("drag", function(d, i) { dragFunction(this, d3.event, d.index, x, y, panel); }))
             .on("click", function(d)
               {
                 editFunction();
               });
+
+        var boundingLines = glyphs.selectAll("line.bounds").data(function(d, i) 
+                              { var box = d.glyph.path.getBoundingBox();
+                               var lines = [];
+                               lines.push([new Victor(box.x1, box.y1), new Victor(box.x1, box.y2)]);
+                               lines.push([new Victor(box.x1, box.y1), new Victor(box.x2, box.y1)]);
+                               lines.push([new Victor(box.x2, box.y1), new Victor(box.x2, box.y2)]);
+                               lines.push([new Victor(box.x1, box.y2), new Victor(box.x2, box.y2)]); 
+                                return lines; })
+            .attr("x1", function(d) { return x(d[0].x) })
+            .attr("y1", function(d) { return y(GLYPH_SCALE - d[0].y) })
+            .attr("x2", function(d) { return x(d[1].x) })
+            .attr("y2", function(d) { return y(GLYPH_SCALE - d[1].y) });
+        boundingLines.enter()
+          .append("line")
+            .attr("class", "bounds")
+            .attr("x1", function(d) { return x(d[0].x) })
+            .attr("y1", function(d) { return y(GLYPH_SCALE - d[0].y) })
+            .attr("x2", function(d) { return x(d[1].x) })
+            .attr("y2", function(d) { return y(GLYPH_SCALE - d[1].y) })
+            .style("stroke-width", 0)
+            .style("stroke-opacity", 1)
+            .style("stroke-dasharray", 1);
+
+        var boxDrag = glyphs.select("circle.bbox");
+        if(boxDrag._groups[0][0] === undefined)
+        {
+          glyphs.append("circle")
+            .attr("class", "bbox")
+            .attr("cx", function(d) { return x(d.glyph.path.getBoundingBox().x1) })
+            .attr("cy", function(d) { return y(GLYPH_SCALE-d.glyph.path.getBoundingBox().y1) })
+            .attr("r", 0)
+            .style("fill", "black")
+            .style("stroke", "white")
+            .call(d3.drag().on("drag", function(d, i) { dragFunction(this, d3.event, d.index, x, y, panel); }))
+            .on("click", function(d)
+              {
+                editFunction();
+              });
+        }
+        else
+        {
+          boxDrag.attr("cx", function(d) { return x(d.glyph.path.getBoundingBox().x1) })
+            .attr("cy", function(d) { return y(GLYPH_SCALE-d.glyph.path.getBoundingBox().y1) });
+        } 
+
+        var aWidth = glyphs.select("circle.awidth");
+        var aLine = glyphs.select("line.aWidth");
+        if(aWidth._groups[0][0] === undefined)
+        {
+          glyphs.append("circle")
+            .attr("class", "awidth")
+            .attr("cx", function(d) { return x(d.glyph.path.getBoundingBox().x2); })
+            .attr("cy", function(d) { return panel.drawParams.boxScale; })
+            .attr("r", 0)
+            .style("fill", "white")
+            .style("stroke", "black")
+            .call(d3.drag().on("drag", function(d, i) 
+              { dragFunction(this, d3.event, d.index, x, y, panel); })
+                .on("start", function(d) {
+                  glyphs.select("line.awidth").style("stroke-width", 1);  
+                })
+                .on("end", function(d)
+                {
+                  glyphs.select("line.awidth").style("stroke-width", 0);
+                }))
+            .on("click", function(d)
+              {
+                //Tell difference between click down and up?
+                editFunction();
+              });
+
+           glyphs.append("line")
+            .attr("class", "awidth")
+            .attr("x1", function(d) { return x(d.glyph.path.getBoundingBox().x2); })
+            .attr("y1", function(d) { return panel.drawParams.boxScale; })  
+            .attr("x2", function(d) { return x(d.glyph.path.getBoundingBox().x2); })
+            .attr("y2", 0)
+            .style("stroke-width", 0)
+            .style("stroke-opacity", 1)
+            .style("stroke-dasharray", 1);
+        }
+        else if(aWidth.attr("cx") < x(aWidth.datum().glyph.path.getBoundingBox().x2))
+        {
+          aWidth.attr("cx", function(d) { return x(d.glyph.path.getBoundingBox().x2); });
+          aLine.attr("x1", function(d) { return x(d.glyph.path.getBoundingBox().x2); })
+          .attr("x2", function(d) { return x(d.glyph.path.getBoundingBox().x2); });
+        }
       }
 
       function editFunction()
@@ -289,26 +392,29 @@
         }
       }
 
-      function dragFunction(element, event, index, x, y)
+      function dragFunction(element, event, index, x, y, panel)
       {
         var selection = d3.select(element);
-        selection.attr("cx", event.x).attr("cy", event.y);
         var pointType = selection.attr("class");
-
-        //Get the Victor object on the current datum and change by d/dt
-        /*var pos = selection.datum()[pointType];
-        var newPos = new Victor(pos.x, pos.y).add(new Victor(event.dx, event.dy));
-        selection.datum()[selection.attr("class")] = newPos;
-        d3.select(element.parentNode).selectAll("path")
-          .filter(function(d, i) { return i === index;})
-            .attr("d", function(d) 
-              { var newPath = strokeInterpret(d.contours, x, y); return newPath; });*/
-
+        var glyphData = d3.select(element.parentNode).datum();
+        var opentypePath = glyphData.glyph.path;
         //Modify underlying opentype data - be sure to invert to glyph space
-        var idx = x.invert(event.dx);
-        var idy = y.invert(-1*event.dy);
-        var opentypeGlyph = d3.select(element.parentNode).datum().glyph;
-        var opentypePath = opentypeGlyph.path;
+        var idx=0;  
+        var idy=0;
+        if(pointType != "bbox" && pointType != "awidth")
+        {
+          if(event.x > 0  && event.x < panel.drawParams.boxScale)
+          {
+            selection.attr("cx", event.x);
+            idx=x.invert(event.dx);
+          }
+          if(event.y > 0 && event.y < panel.drawParams.boxScale)
+          {
+            selection.attr("cy", event.y);
+            idy=y.invert(-1*event.dy);
+          }
+        }
+
         var startIndex = index*5;
 
         switch(pointType)
@@ -320,36 +426,146 @@
             opentypePath.commands[startIndex+1].y += idy;
             opentypePath.commands[startIndex+4].x += idx;
             opentypePath.commands[startIndex+4].y += idy;
+
+            glyphData.glyph.strokeData[index].start.x += idx;
+            glyphData.glyph.strokeData[index].start.y += idy;
           break;
           case "end":
             opentypePath.commands[startIndex+2].x += idx;
             opentypePath.commands[startIndex+2].y += idy;
             opentypePath.commands[startIndex+3].x += idx;
             opentypePath.commands[startIndex+3].y += idy;
+
+            glyphData.glyph.strokeData[index].end.x += idx;
+            glyphData.glyph.strokeData[index].end.y += idy;
           break;
           case "cp1":
             opentypePath.commands[startIndex+2].x1 += idx;
             opentypePath.commands[startIndex+2].y1 += idy;
             opentypePath.commands[startIndex+4].x1 += idx;
             opentypePath.commands[startIndex+4].y1 += idy;
+
+            glyphData.glyph.strokeData[index].cp1.x += idx;
+            glyphData.glyph.strokeData[index].cp1.y += idy;
           break;
           case "cp2":
             opentypePath.commands[startIndex+2].x2 += idx;
             opentypePath.commands[startIndex+2].y2 += idy;
             opentypePath.commands[startIndex+4].x2 += idx;
             opentypePath.commands[startIndex+4].y2 += idy;
+
+            glyphData.glyph.strokeData[index].cp2.x += idx;
+            glyphData.glyph.strokeData[index].cp2.y += idy;
+          break;
+          case "awidth": 
+            if(event.x > 0 && event.x < panel.drawParams.boxScale)
+            {
+              var bbox = opentypePath.getBoundingBox();
+              if(event.x >= x(bbox.x2))
+              {
+                selection.attr("cx", event.x);
+                glyphData.glyph.advanceWidth = event.x / panel.drawParams.boxScale * GLYPH_SCALE;
+                d3.select(element.parentNode).select("line.awidth").attr("x1", event.x).attr("x2", event.x);     
+              }
+            }
+          break;
+          case "bbox":
+            var bbox = opentypePath.getBoundingBox(); 
+            if(event.x > 0 && event.x < panel.drawParams.boxScale - x(bbox.x2 - bbox.x1))
+            {
+              selection.attr("cx", event.x);
+              idx=x.invert(event.dx);
+            }    
+            if(event.y < panel.drawParams.boxScale && event.y > 0 + y(bbox.y2 - bbox.y1))
+            {
+              selection.attr("cy", event.y);
+              idy=y.invert(-1*event.dy);
+            }
+            for(var i=0;i<opentypePath.commands.length;i++)
+            {
+              opentypePath.commands[i].x += idx;
+              opentypePath.commands[i].y += idy;
+              
+              if(opentypePath.commands[i].hasOwnProperty('x1'))
+              {
+                opentypePath.commands[i].x1 += idx;
+                opentypePath.commands[i].y1 += idy;
+              }
+              if(opentypePath.commands[i].hasOwnProperty('x2'))
+              {
+                opentypePath.commands[i].x2 += idx;
+                opentypePath.commands[i].y2 += idy;
+              }
+            }
+            for(var i =0; i<glyphData.glyph.strokeData.length;i++)
+            {
+              glyphData.glyph.strokeData[i].start.x += idx;
+              glyphData.glyph.strokeData[i].start.y += idy; 
+              glyphData.glyph.strokeData[i].end.x += idx;
+              glyphData.glyph.strokeData[i].end.y += idy;
+              if(glyphData.glyph.strokeData[i].hasOwnProperty('cp1'))
+              {
+                glyphData.glyph.strokeData[i].cp1.x += idx;
+                glyphData.glyph.strokeData[i].cp1.y += idy;
+              }
+              if(glyphData.glyph.strokeData[i].hasOwnProperty('cp2'))
+              {
+                glyphData.glyph.strokeData[i].cp2.x += idx;
+                glyphData.glyph.strokeData[i].cp2.y += idy;
+              }
+            }
+            var newGlyph = glyphToStrokes(glyphData.glyph);
+            var transGlyph = d3.select(element.parentNode).datum(newGlyph);
+            
+            //Manually uppdate the new path
+            transGlyph.selectAll("path")
+              .data(function(d, i) { return d.strokes; })
+                .attr("d", function(d) 
+                { var newPath = strokeInterpret(d.contours, x, y); return newPath; });
+            initGlyphData(transGlyph, x, y, panel);
           break;
           default:
             console.log("Point type not recognized");
         }
-        opentypeGlyph.path = opentypePath;
-        copyStroke(opentypeGlyph.strokeData[index], opentypeGlyph.path, selection.datum(), index);
 
-        //Manually update the new path
-        d3.select(element.parentNode).selectAll("path")
-          .filter(function(d, i) { return i === index;})
-            .attr("d", function(d) 
-              { var newPath = strokeInterpret(d.contours, x, y); return newPath; });
+        if(pointType !== "bbox" && pointType !== "awidth")
+        {
+          //Update only the stroke that was changed.
+          copyStroke(glyphData.glyph.strokeData[index], opentypePath, selection.datum(), index);
+
+          var dGlyphs = d3.select(element.parentNode);
+          //Manually update the new path
+          dGlyphs.selectAll("path")
+            .filter(function(d, i) { return i === index;})
+              .attr("d", function(d) 
+                { var newPath = strokeInterpret(d.contours, x, y); return newPath; });
+
+          var box = glyphData.glyph.path.getBoundingBox();
+          dGlyphs.select("circle.bbox")
+            .attr("cx", function(d) { return x(box.x1) })
+            .attr("cy", function(d) { return y(GLYPH_SCALE-box.y1) });
+          var boundingLines = dGlyphs.selectAll("line.bounds").data(function(d, i) 
+                              { 
+                               var lines = [];
+                               lines.push([new Victor(box.x1, box.y1), new Victor(box.x1, box.y2)]);
+                               lines.push([new Victor(box.x1, box.y1), new Victor(box.x2, box.y1)]);
+                               lines.push([new Victor(box.x2, box.y1), new Victor(box.x2, box.y2)]);
+                               lines.push([new Victor(box.x1, box.y2), new Victor(box.x2, box.y2)]); 
+                                return lines; })
+            .attr("x1", function(d) { return x(d[0].x) })
+            .attr("y1", function(d) { return y(GLYPH_SCALE - d[0].y) })
+            .attr("x2", function(d) { return x(d[1].x) })
+            .attr("y2", function(d) { return y(GLYPH_SCALE - d[1].y) });
+
+          var aWidth = dGlyphs.select("circle.awidth");
+          if(x(box.x2) > aWidth.attr("cx"))
+          {
+            aWidth.attr("cx", x(box.x2 ));
+            var aLine = dGlyphs.select("line.awidth")
+                        .attr("x1", x(box.x2 ))
+                        .attr("x2", x(box.x2 ))
+          }
+        }
       }
 
       function parseGlyph(text)
@@ -357,7 +573,7 @@
         //text = push first letter out 'M'
         var glyphPath = new opentype.Path();
         var pathList = []; 
-        var colors = ['red', 'blue', 'green', 'yellow', 'magenta', 'cyan', 'orange', 'purple', 'grey', 'black'];
+        var colors = ['red', 'blue', 'green', 'yellow', 'magenta', 'cyan', 'orange', 'purple', 'grey'];
   
         while(text[0] != 'M' && text.length > 0)
         {

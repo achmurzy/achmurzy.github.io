@@ -110,21 +110,28 @@ function Panel(name, draw, glyph)
     this.inspect = true;
 	this.addGlyph = function(glyph)  //Can add functions here or with 'prototype' ; <-- just don't forget this
 	{
-      	this.glyphData.push(glyphToStrokes(glyph));
-      	this.glyphCounter++;   
-      	this.update();
 		if(this.glyphsFull())
     	{   
 	    	if(this.firehose)
 	    	{
 	    		this.glyphData = [];
 	    	}
+        else if(this.name === "font")
+        {
+
+        }
 	    	else
 	    	{
 	    		this.toggleGeneration();
 	    		this.showFullButton((this.drawParams.glyphsX()*this.drawParams.glyphsY())-1);
 	    	}
-    	} 
+    	}
+      else
+      {
+        this.glyphData.push(glyphToStrokes(glyph));
+        this.glyphCounter++;   
+        this.update();
+      } 
 	};
 
 	var timeCall = function()
@@ -188,34 +195,25 @@ Panel.prototype.update = function()
             .attr("transform", function(d, i) { return _this.positionGlyph(i, _this.expandedElement); });
     enterGlyphs.append("rect")
     		.attr("class", "enter")
-              .attr("x", 0)
-              .attr("y", function(d, i) { return 0; })
-              .attr("width", this.drawParams.boxScale)
-              .attr("height", this.drawParams.boxScale)
-              .attr("stroke", 'black')
-              .style("fill-opacity", 0)
-              .attr("fill", this.drawParams.boxColor)
-              .on("click", function(d, i) //Callbacks store references "as-is"
-                { 
-                	var gElement = this.parentNode;
-                	if(_this.inspect)
-                		_this.clickFunction(d, i, gElement, partial(_this.doubleClickSemantics, _this, gElement));
-                }).transition()
-              		.duration(function(d) 
-              			{ return d3.select(this.parentNode).datum().strokes.length * _this.drawParams.drawDuration; })
-              		.style("fill-opacity", 0.35);
+          .attr("x", 0)
+          .attr("y", function(d, i) { return 0; })
+          .attr("width", this.drawParams.boxScale)
+          .attr("height", this.drawParams.boxScale)
+          .attr("stroke", 'black')
+          .style("fill-opacity", 0)
+          .attr("fill", this.drawParams.boxColor)
+          .on("click", function(d, i) //Callbacks store references "as-is"
+            { 
+            	var gElement = this.parentNode;
+            	if(_this.inspect)
+            		_this.clickFunction(d, i, gElement, partial(_this.doubleClickSemantics, _this, gElement));
+            }).transition()
+          		.duration(function(d) 
+          			{ return d3.select(this.parentNode).datum().strokes.length * _this.drawParams.drawDuration; })
+          		.style("fill-opacity", 0.35);
 
      var strokes = glyphs.merge(enterGlyphs).selectAll("path").data(function(d, i) { return d.strokes; });
-    //In-place update, filtering for the current glyph being updated
-    /*if(this.glyphCounter === this.drawParams.glyphsX()*this.drawParams.glyphsY())
-    {
-    	strokes.filter(function(d, i)
-    	{
-    		return i === this.glyphCounter;
-    	}).attr("d", function(d) 
-   			{ return strokeInterpret(d.contours, _this.drawParams.xScale, _this.drawParams.yScale); });
-    }*/
-    
+  
     //Enter update - stroke-by-stroke render
     strokes.enter()
       .append("path")  

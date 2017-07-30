@@ -1,38 +1,52 @@
+function loadFont(fontName, panel)
+{
+  opentype.load(fontName, function(err, font)
+  {
+    if(err)
+    {
+      console.log(err); 
+    }
+    else
+    {
+      fontPanel.showFont(font);  
+    }
+  });
+}
 
 function buildFont(glyphData, fontName="codex_") //Take glyphs in the alphabet panel and write to opentype
+{
+  var codex = [];
+  alphabetPanel.group.selectAll("g").each(function(d, i) 
+  {
+    console.log("Adding glyph: " + i);
+    d.glyph.index = i;
+    codex.push(d.glyph);
+  });
+
+  var date = new Date();
+  if(codex.length > 0)
+  {
+    var font = new opentype.Font({
+    familyName: fontName+date.toLocaleString(),
+    styleName: 'Medium',
+    unitsPerEm: GLYPH_SCALE,
+    ascender: GLYPH_SCALE,
+    descender: 0,
+    glyphs: codex });
+  
+    console.log(font);
+
+    fontJSON = JSON.stringify(font, function(key, value)
       {
-        var codex = [];
-        alphabetPanel.group.selectAll("g").each(function(d, i) 
-        {
-          console.log("Adding glyph: " + i);
-          d.glyph.index = i;
-          codex.push(d.glyph);
-        });
-
-        var date = new Date();
-        if(codex.length > 0)
-        {
-          var font = new opentype.Font({
-          familyName: fontName+date.toLocaleString(),
-          styleName: 'Medium',
-          unitsPerEm: GLYPH_SCALE,
-          ascender: GLYPH_SCALE,
-          descender: 0,
-          glyphs: codex });
-        
-          console.log(font);
-
-          fontJSON = JSON.stringify(font, function(key, value)
-            {
-              if(key === 'font')
-                return undefined;
-              return value;
-            });
-          
-          if(/Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor))
-            font.download();
-        }
-      }
+        if(key === 'font')
+          return undefined;
+        return value;
+      });
+    
+    if(/Chrome/.test(navigator.userAgent) && /Google Inc/.test(navigator.vendor))
+      font.download();
+  }
+}
 
 //download.js -- danml.com
 function download(data, strFileName, strMimeType) {

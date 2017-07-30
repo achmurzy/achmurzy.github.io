@@ -50,7 +50,7 @@
       var PANEL_WIDTH = 400;
       var PANEL_HEIGHT = 100;
       var BOX_SCALE = 50;
-      var colors = ["green", "yellow", "cyan", "magenta"];
+      var colors = ["green", "red", "cyan", "magenta", "yellow"];
       var INSPECT_SCALE = 4;      
       var GENERATION_RATE = 100;
       var DRAW_SPEED = 50;
@@ -65,6 +65,7 @@
         var newGlyphs = new Generator();
         var newPanel = new Panel("draw", newParams, newGlyphs)
         panel_y += (PANEL_HEIGHT + (BOX_SCALE*INSPECT_SCALE));
+        return newPanel;
       }
 
       for(var i = 0 ; i < 2; i++)
@@ -85,6 +86,9 @@
                         .duration(100)
                         .style("stroke-opacity", 1); });
       */
+      var fontPanel = addPanel(2);
+      fontPanel.toggleGeneration();
+      var ff = loadFont('lklug.ttf', fontPanel);
     </script>
   </body>
 </html>

@@ -17,14 +17,14 @@ function Panel(name, draw, glyph)
 						.attr("y", this.drawParams.boxScale)
 						.attr("width", this.drawParams.boxScale)
 						.attr("height", 0)
-						.style("fill", this.drawParams.boxColor)
-						.style("fill-opacity", 0.35)
+						.style("fill", 'gray')
+						.style("fill-opacity", 0.2)
 						.on("click", function() 
 						{
 							if(!_this.fullClick)
 							{
 								_this.fullClick = true;
-								_this.hideFullButton((_this.drawParams.glyphsX()*_this.drawParams.glyphsY())-1);
+								_this.hideFullButton((_this.drawParams.glyphsX()*_this.drawParams.glyphsY()));
 		    					_this.glyphData = [];
 		    					_this.expandedElement = Number.MAX_SAFE_INTEGER;
 								_this.toggleGeneration();
@@ -36,19 +36,22 @@ function Panel(name, draw, glyph)
 							.attr("x1", (3*this.drawParams.boxScale/4))
 							.attr("y1", this.drawParams.boxScale + this.drawParams.boxScale/8)
 							.attr("x2", this.drawParams.boxScale/4)
-							.attr("y2", this.drawParams.boxScale + this.drawParams.boxScale/8);
+							.attr("y2", this.drawParams.boxScale + this.drawParams.boxScale/8)
+              .style("stroke-width", 0.5);
 						this.group.append("line")
               .attr("class", "full")
 							.attr("x1", this.drawParams.boxScale - this.drawParams.boxScale/3)
 							.attr("y1", this.drawParams.boxScale)
 							.attr("x2", this.drawParams.boxScale - this.drawParams.boxScale/4)
-							.attr("y2", this.drawParams.boxScale + this.drawParams.boxScale/8);
+							.attr("y2", this.drawParams.boxScale + this.drawParams.boxScale/8)
+              .style("stroke-width", 0.5);
 						this.group.append("line")
 							.attr("class", "full")
               .attr("x1", this .drawParams.boxScale - this.drawParams.boxScale/3)
 							.attr("y1", this.drawParams.boxScale + this.drawParams.boxScale/4)
 							.attr("x2", this.drawParams.boxScale - this.drawParams.boxScale/4)
-							.attr("y2", this.drawParams.boxScale + this.drawParams.boxScale/8);
+							.attr("y2", this.drawParams.boxScale + this.drawParams.boxScale/8)
+              .style("stroke-width", 0.5);
 
   //These buttons were written hastily, and are sloppy and clogging the code.
   //Totally unnatural, rushed bullshit.
@@ -84,7 +87,7 @@ function Panel(name, draw, glyph)
 							return i === index;
 						});
 						d3.select(this.fullButton).remove();
-						var lines = lastElement.selectAll("line").remove();
+						var lines = lastElement.selectAll("line.full").remove();
 						lines.transition()
 							.duration(0)
 							.style("stroke-opacity", 0);
@@ -108,8 +111,8 @@ function Panel(name, draw, glyph)
 
     this.firehose = false;
     this.inspect = true;
-	this.addGlyph = function(glyph)  //Can add functions here or with 'prototype' ; <-- just don't forget this
-	{
+	this.addGlyph = function(glyph)  
+  {
 		if(this.glyphsFull())
     	{   
 	    	if(this.firehose)
@@ -123,7 +126,7 @@ function Panel(name, draw, glyph)
 	    	else
 	    	{
 	    		this.toggleGeneration();
-	    		this.showFullButton((this.drawParams.glyphsX()*this.drawParams.glyphsY())-1);
+	    		this.showFullButton((this.drawParams.glyphsX()*this.drawParams.glyphsY()));
 	    	}
     	}
       else
@@ -199,9 +202,10 @@ Panel.prototype.update = function()
           .attr("y", function(d, i) { return 0; })
           .attr("width", this.drawParams.boxScale)
           .attr("height", this.drawParams.boxScale)
-          .attr("stroke", 'black')
-          .style("fill-opacity", 0)
-          .attr("fill", this.drawParams.boxColor)
+          .attr("stroke", 'gray')
+          .style("stroke-opacity", 0.15)
+          .style("stroke-weight", 0.15)
+          .style("fill-opacity", 0.2)
           .on("click", function(d, i) //Callbacks store references "as-is"
             { 
             	var gElement = this.parentNode;
@@ -210,7 +214,7 @@ Panel.prototype.update = function()
             }).transition()
           		.duration(function(d) 
           			{ return d3.select(this.parentNode).datum().strokes.length * _this.drawParams.drawDuration; })
-          		.style("fill-opacity", 0.35);
+          		.style("fill-opacity", 0.2);
 
      var strokes = glyphs.merge(enterGlyphs).selectAll("path").data(function(d, i) { return d.strokes; });
   
@@ -229,8 +233,11 @@ Panel.prototype.update = function()
           .duration(this.drawParams.drawDuration)
           .delay(function(d, i) { return _this.drawParams.drawDuration * i; })
           .ease(d3.easeLinear)
-          .style("fill-opacity", 0.25)
-          .style("stroke-opacity", 0.5)
+          .style("fill", this.drawParams.boxColor)
+          .style("fill-opacity", 1)
+          .style("stroke", "gray")
+          .style("stroke-weight", 0.1)
+          .style("stroke-opacity", 0.1)
           .style("stroke-dashoffset", function(d) 
           { return 0+"px"; })
           .on("end", function() { d3.select(this).attr("class", "drawn"); });
@@ -305,7 +312,7 @@ Panel.prototype.doubleClickSemantics = function(_this, gElement)
         });
 
         alphabetize(gElement);
-        toggleGlyphData(gSelect, false);
+        _this.toggleGlyphData(gSelect, false);
         _this.removeGlyph(_this, positionIndex);
         if(_this.totalTime === _this.stopTime)
         	_this.toggleGeneration();
@@ -339,7 +346,7 @@ Panel.prototype.inspectGlyph = function(gElement, i)
     else {
       this.expandedElement = i;
       positionFunc = this.expand;
-      toggleGlyphData(d3.select(gElement), true);
+      this.toggleGlyphData(d3.select(gElement), true);
     }
 
     this.transformGlyphs(positionFunc);
@@ -355,7 +362,7 @@ Panel.prototype.inspectGlyph = function(gElement, i)
       var startTransform = parseTransform(groupElement.attr("transform"));
       var endTransform = positionFunction(i, _this); 
       if(i===_this.lastExpanded)
-      { toggleGlyphData(groupElement, false); }
+      { _this.toggleGlyphData(groupElement, false); }
       groupElement.transition()
         .attrTween("transform", function(t)
         {
@@ -367,54 +374,94 @@ Panel.prototype.inspectGlyph = function(gElement, i)
     });
   };
 
+Panel.prototype.toggleGlyphData = function(glyph, up)
+{
+  var _this = this;
+  var radius = up ? 1 : 0;
+  
+  //Draw stroke elements for interactive editing
+  var startPoints = glyph.selectAll("circle.start").attr("r", radius);
+  var endPoints = glyph.selectAll("circle.end").attr("r", radius);
+  var controlPoints1 = glyph.selectAll("circle.cp1").attr("r", radius);
+  var controlPoints2 = glyph.selectAll("circle.cp2").attr("r", radius);
+
+  var bbox = glyph.selectAll("circle.bbox").attr("r", radius);
+  var aWidth = glyph.select("circle.awidth").attr("r", radius);
+  var boundingLines = glyph.selectAll("line.bounds")
+    .style("stroke-width", 0.1 * radius);
+
+  glyph.selectAll("path").transition()
+    .style("fill", function(d) { if(up) return d.color; else return _this.drawParams.boxColor; })
+    .style("stroke",function(d) { if(up) return d.color; else return 'gray'; });
+
+};
+
   Panel.prototype.positionGlyph = function(index, element)
+  {
+  	var offset = 0;
+  	if(element != Number.MAX_SAFE_INTEGER && index > element)
+  	{
+  		var columnNumber = (element) % this.drawParams.glyphsX();
+		var emptyColumns = this.drawParams.inspectScale - (this.drawParams.glyphsX() - columnNumber);
+		if(emptyColumns < 0)
+			emptyColumns = 0;
+      var boundaryIndex = Math.floor((index - element - 1) / 
+      	(this.drawParams.glyphsX() - (this.drawParams.inspectScale - emptyColumns)))+1;
+      if(boundaryIndex > this.drawParams.inspectScale)
+      	boundaryIndex = this.drawParams.inspectScale;
+
+      offset = (boundaryIndex * (this.drawParams.inspectScale - emptyColumns)) - 1;
+  	}
+
+    var gY = Math.floor((index+offset) / this.drawParams.glyphsX());
+    var gX = (offset+index) - (gY * this.drawParams.glyphsX());
+
+    return "translate(" + this.drawParams.gScaleX(gX) + "," + this.drawParams.gScaleY(gY) + ") scale(1,1)";
+  };
+
+  //Adds false glyphs to make room for expanded element
+  Panel.prototype.expand = function(i, panel)
+  {  
+    if(i >= panel.expandedElement) //Only position glyphs past the expanded element
+    {       
+      if(i === panel.expandedElement)
+      { 
+        var transform = parseTransform(panel.positionGlyph(i, Number.MAX_SAFE_INTEGER));
+        transform.scale = [panel.drawParams.inspectScale, panel.drawParams.inspectScale];
+        return transform;
+      }
+      else
       {
-      	var offset = 0;
-      	if(element != Number.MAX_SAFE_INTEGER && index > element)
-      	{
-      		var columnNumber = (element) % this.drawParams.glyphsX();
- 			var emptyColumns = this.drawParams.inspectScale - (this.drawParams.glyphsX() - columnNumber);
- 			if(emptyColumns < 0)
- 				emptyColumns = 0;
-	        var boundaryIndex = Math.floor((index - element - 1) / 
-	        	(this.drawParams.glyphsX() - (this.drawParams.inspectScale - emptyColumns)))+1;
-	        if(boundaryIndex > this.drawParams.inspectScale)
-	        	boundaryIndex = this.drawParams.inspectScale;
+        return parseTransform(panel.positionGlyph(i, panel.expandedElement));
+      }
+    }
+    else
+    {
+      return parseTransform(panel.positionGlyph(i, Number.MAX_SAFE_INTEGER));
+    }   
+  };
 
-	        offset = (boundaryIndex * (this.drawParams.inspectScale - emptyColumns)) - 1;
-      	}
+  //Collapses transforms to return to default panel formatting
+  Panel.prototype.collapse = function(i, panel)
+  {
+    return parseTransform(panel.positionGlyph(i, Number.MAX_SAFE_INTEGER));
+  };
 
-        var gY = Math.floor((index+offset) / this.drawParams.glyphsX());
-        var gX = (offset+index) - (gY * this.drawParams.glyphsX());
-
-        return "translate(" + this.drawParams.gScaleX(gX) + "," + this.drawParams.gScaleY(gY) + ") scale(1,1)";
-      };
-
-      //Adds false glyphs to make room for expanded element
-      Panel.prototype.expand = function(i, panel)
-      {  
-        if(i >= panel.expandedElement) //Only position glyphs past the expanded element
-        {       
-          if(i === panel.expandedElement)
-          { 
-            var transform = parseTransform(panel.positionGlyph(i, Number.MAX_SAFE_INTEGER));
-            transform.scale = [panel.drawParams.inspectScale, panel.drawParams.inspectScale];
-            return transform;
-          }
-          else
-          {
-            return parseTransform(panel.positionGlyph(i, panel.expandedElement));
-          }
-        }
-        else
-        {
-          return parseTransform(panel.positionGlyph(i, Number.MAX_SAFE_INTEGER));
-        }   
-      };
-
-      //Collapses transforms to return to default panel formatting
-      Panel.prototype.collapse = function(i, panel)
+  Panel.prototype.showFont = function(font)
+  {
+    this.glyphData = [];
+    console.log(font);
+    for(var i = 0; i < font.glyphs.length; i++)
+    {
+      //this.glyphData.push(glyphToStrokes(font.glyphs.glyphs[i]));
+      for(var j = 0; j < font.glyphs.glyphs[i].path.commands.length;j++)
       {
-        return parseTransform(panel.positionGlyph(i, Number.MAX_SAFE_INTEGER));
-      };
+        var glyph = new Object();
+        glyph.strokeData = [];
+        //Need to get into JSON-style list of commands for learning module
+        //start is x,yy
+      }
+    }
+    //this.update();
+  };
       

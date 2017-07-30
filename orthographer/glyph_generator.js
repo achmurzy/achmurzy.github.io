@@ -337,9 +337,16 @@ Generator.prototype.parseGlyphs = function(text, panel)
 	      addContour(path, currentGlyph.path);
 	    }
 	  }
-	  console.log(drawGlyphs);
+	panel.hideFullButton((panel.drawParams.glyphsX()*panel.drawParams.glyphsY()));
+	panel.glyphData = [];
+	panel.expandedElement = Number.MAX_SAFE_INTEGER;
 	  for(var i =0;i<drawGlyphs.length;i++)
 	  {
+	  	if(panel.glyphsFull())
+	  	{
+	  		panel.showFullButton(panel.drawParams.glyphCount);
+	  		break;
+	  	}
 	  	panel.addGlyph(drawGlyphs[i]);
 	  }
   };

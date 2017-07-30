@@ -17,6 +17,7 @@ function DrawParameters(x, y, width, height, scale, color, inspect, rate, speed)
 
     this.glyphsX = function() { return this.width / this.boxScale; };
     this.glyphsY = function() { return this.height / this.boxScale; };
+    this.glyphCount = this.glyphsX()*this.glyphsY();
 
     if(this.inspectScale > this.glyphsX())
     	this.inspectScale = this.glyphsX();
@@ -42,124 +43,88 @@ DrawParameters.prototype.createButton = function(panel)
     this.parameterClick = false;
     var pbWidth = (this.width-this.boxScale);
     var pbHeight = (-this.boxScale/4);
-    this.parameterButton = panel.group.append("rect")
-                        .attr("x", pbWidth)
-                        .attr("y", pbHeight)
-                        .attr("width", this.boxScale)
-                        .attr("height", this.boxScale/4)
-                        .style("fill", this.boxColor)
-                        .style("fill-opacity", 0.35)
-                        .on("click", function() 
-                        {
-                            if(!_this.parameterClick)
-                            {
-                                _this.parameterClick = true;
-                                _this.parameterShow = !_this.parameterShow;
-                                _this.togglePanel();
-                            }
-                            
-                        });
-    panel.group.append("line")
-        .attr("x1", pbWidth + (3*this.boxScale/4))
-        .attr("y1", pbHeight + this.boxScale/8)
-        .attr("x2", pbWidth + this.boxScale/4)
-        .attr("y2", pbHeight + this.boxScale/8)
-        .style("stroke-opacity", 1);
-    panel.group.append("line")
-        .attr("x1", (pbWidth+this.boxScale) - this.boxScale/3)
-        .attr("y1", pbHeight)
-        .attr("x2", (pbWidth+this.boxScale) - this.boxScale/4)
-        .attr("y2", pbHeight+this.boxScale/8)
-        .style("stroke-opacity", 1);
-    panel.group.append("line")
-        .attr("x1", (pbWidth+this.boxScale) - this.boxScale/3)
-        .attr("y1", pbHeight+this.boxScale/4)
-        .attr("x2", (pbWidth+this.boxScale) - this.boxScale/4)
-        .attr("y2", pbHeight+this.boxScale/8)
-        .style("stroke-opacity", 1);
 
     this.parameterX = (this.width+(this.boxScale*this.inspectScale))-(this.boxScale/2);
     this.parameterPanel = panel.group.append("g")
         .attr("class", "parameters")
         .attr("transform", "translate("+this.parameterX+","+(0)+") scale(1,1)");
+
+    //Glyph parsing button - accepts .ttf, .otf, .txt (training/learning data)
     this.parameterPanel.append("rect")
         .attr("x", 0)
-        .attr("y", 0)
+        .attr("y", this.panelWidth)
         .attr("width", this.panelWidth)
         .attr("height", this.panelWidth)
         .style("fill-opacity", 0.35)
         .style("fill", this.boxColor);
 
-    //Somewhat sloppy... uses variable names directly from the glyph generator
-    //At the same time, minimal and self-contained and a beautful hand-written piece of craft
-    if(panel.name === "font")
+    this.parameterPanel.append("text")
+        .attr("class", "noselect")
+        .attr("x", 0)
+        .attr("y", this.panelWidth)
+        .text("Glyph data file")
+        .style("font-size", 12+"px");
+
+    if(window.FileReader)
     {
+        this.inputButton = document.createElement("INPUT");
+        this.inputButton.setAttribute("type", "file");
+        this.inputButton.setAttribute("value", "default");
+
+        function inputDrag (ev) //this is calling drag rect
+        {
+            ev.stopPropagation (); 
+            ev.preventDefault ();
+            if (ev.type == 'drop') 
+            {
+              var reader = new FileReader ();
+              reader.onloadend = function (ev) { panel.generator.parseGlyphs(this.result, panel); };
+              reader.readAsText (ev.dataTransfer.files[0]);
+              d3.select(this).style("fill-opacity", 0.1);                  
+            } 
+            else if(ev.type == 'dragenter')
+            {
+              d3.select(this).style("fill-opacity", 0.75);
+            } 
+            else if(ev.type == 'dragexit')
+            {
+              d3.select(this).style("fill-opacity", 0.1);                    
+            }
+        }
+    
+        this.parseGlyphButton = this.parameterPanel.append("rect") 
+          .attr("x", 10)
+          .attr("y", this.panelWidth+10)
+          .attr("width", this.panelWidth-20)
+          .attr("height", this.panelWidth-20)
+          .style("fill", this.boxColor)
+          .style("fill-opacity", 0.1)
+          .style("stroke", "black")
+          .style("stroke-opacity", 1);    
+
+        this.parseGlyphButton.node().addEventListener("dragenter", inputDrag, false);
+        this.parseGlyphButton.node().addEventListener("dragexit", inputDrag, false);
+        this.parseGlyphButton.node().addEventListener("dragover", inputDrag, false);
+        this.parseGlyphButton.node().addEventListener("drop", inputDrag, false);
+
         this.parameterPanel.append("text")
             .attr("class", "noselect")
             .attr("x", 0)
-            .attr("y", 0)
-            .text("Glyph data file")
+            .attr("y", this.panelWidth+this.panelWidth/2)
+            .text("Drag glyph data here")
             .style("font-size", 12+"px");
-
-        if(window.FileReader)
-        {
-            this.inputButton = document.createElement("INPUT");
-            this.inputButton.setAttribute("type", "file");
-            this.inputButton.setAttribute("value", "default");
-
-            function inputDrag (ev) //this is calling drag rect
-            {
-                ev.stopPropagation (); 
-                ev.preventDefault ();
-                if (ev.type == 'drop') 
-                {
-                  var reader = new FileReader ();
-                  reader.onloadend = function (ev) { panel.generator.parseGlyphs(this.result, panel); };
-                  reader.readAsText (ev.dataTransfer.files[0]);                  
-                } 
-                else if(ev.type == 'dragenter')
-                {
-                  d3.select(this).style("fill-opacity", 0.75);
-                } 
-                else if(ev.type == 'dragexit')
-                {
-                  d3.select(this).style("fill-opacity", 0.1);                    
-                }
-            }
-        
-            this.parseGlyphButton = this.parameterPanel.append("rect") 
-                              .attr("x", 10)
-                              .attr("y", 10)
-                              .attr("width", this.panelWidth-20)
-                              .attr("height", this.panelWidth-20)
-                              .style("fill", this.boxColor)
-                              .style("fill-opacity", 0.1)
-                              .style("stroke", "black")
-                              .style("stroke-opacity", 1);    
-
-            this.parseGlyphButton.node().addEventListener("dragenter", inputDrag, false);
-            this.parseGlyphButton.node().addEventListener("dragexit", inputDrag, false);
-            this.parseGlyphButton.node().addEventListener("dragover", inputDrag, false);
-            this.parseGlyphButton.node().addEventListener("drop", inputDrag, false);
-
-            this.parameterPanel.append("text")
-                .attr("class", "noselect")
-                .attr("x", 0)
-                .attr("y", this.panelWidth/2)
-                .text("Drag glyph data here")
-                .style("font-size", 12+"px");
-        }
-        else
-        {
-            this.parameterPanel.append("text")
-            .attr("class", "noselect")
-            .attr("x", 0)
-            .attr("y", this.panelWidth)
-            .text("Glyph data upload not supported for your browser.")
-            .style("font-size", 12+"px");   
-        }
     }
     else
+    {
+        this.parameterPanel.append("text")
+        .attr("class", "noselect")
+        .attr("x", 0)
+        .attr("y", this.panelWidth)
+        .text("Glyph data upload not supported for your browser.")
+        .style("font-size", 12+"px");   
+    }
+
+    if(panel.name !== "font")
     {
         this.generator = panel.generator;
         this.addSlider("minStrokes", 0, 0, 10);
@@ -176,12 +141,12 @@ DrawParameters.prototype.createButton = function(panel)
         this.parameterPanel.append("text")
             .attr("class", "noselect")
             .attr("x", 0)
-            .attr("y", this.panelWidth)
+            .attr("y", 2*this.panelWidth + 20)
             .text("Download training data")
             .style("font-size", 10+"px");
         this.parameterPanel.append("rect")
             .attr("x", 0)
-            .attr("y", this.panelWidth)
+            .attr("y", 2*this.panelWidth + 20)
             .attr("width", this.panelWidth)
             .attr("height", this.panelWidth/4)
             .style("stroke", 'black')
@@ -189,7 +154,7 @@ DrawParameters.prototype.createButton = function(panel)
             .style("fill-opacity", 1)
             .style("fill", this.boxColor)
             .on("click", function() { panel.generateTrainingData(_this.generator.trainingDataSize); });
-        this.addSlider("trainingDataSize", this.panelWidth+this.panelWidth/3, 0, 1000);
+        this.addSlider("trainingDataSize", 2*this.panelWidth+50, 0, 1000);
     }
 }
 

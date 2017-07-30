@@ -140,27 +140,6 @@
         };
       }
 
-      function toggleGlyphData(glyph, up)
-      {
-        var radius = up ? 2 : 0;
-        
-        //Draw stroke elements for interactive editing
-        var startPoints = glyph.selectAll("circle.start").attr("r", radius);
-        var endPoints = glyph.selectAll("circle.end").attr("r", radius);
-        var controlPoints1 = glyph.selectAll("circle.cp1").attr("r", radius);
-        var controlPoints2 = glyph.selectAll("circle.cp2").attr("r", radius);
-
-        var bbox = glyph.selectAll("circle.bbox").attr("r", radius);
-        var aWidth = glyph.select("circle.awidth").attr("r", radius);
-        var boundingLines = glyph.selectAll("line.bounds")
-          .style("stroke-width", 0.25 * radius);
-
-        glyph.selectAll("path").transition()
-          .style("fill", function(d) { if(up) return d.color; else return 'black'; })
-          .style("stroke",function(d) { if(up) return d.color; else return 'black'; });
-
-      }
-
       //Transfer elements to the alphabet panel and disable inappropriate callbacks
       function alphabetize(gElement)
       {
@@ -182,7 +161,7 @@
                 if(alphabetPanel.glyphData.length === i)
                   alphabetPanel.showFullButton(alphabetPanel.glyphData.length-1);          
               }, alphabetPanel, alphabetPanel.glyphData.length-1)); //position is length of current dataset
-          }).attr("fill", alphabetPanel.drawParams.boxColor);
+          }).attr("fill", 'gray');
         
         var startTransform = parseTransform(glyphElement.attr("transform"));
         var endTransform = alphabetPanel.collapse(alphabetPanel.glyphData.length - 1, alphabetPanel);
@@ -213,6 +192,8 @@
             .attr("r", 0)
             .style("fill", function(d) { return d.color; })
             .style("stroke", 'black')
+            .style("stroke-width", 0.5)
+            .style("stroke-opacity", 1)
             .call(d3.drag().on("drag", function(d, i) { dragFunction(this, d3.event, i, x, y, panel); }))
             .on("click", function(d)
               {
@@ -231,6 +212,8 @@
             .attr("r", 0)
             .style("fill", function(d) { return d.color; })
             .style("stroke", 'black')
+            .style("stroke-width", 0.5)
+            .style("stroke-opacity", 1)
             .call(d3.drag().on("drag", function(d, i) { dragFunction(this, d3.event, i, x, y, panel); }))
             .on("click", function(d)
               {
@@ -260,6 +243,8 @@
             .attr("r", 0)
             .style("fill", function(d) { return d.color; })
             .style("stroke", 'white')
+            .style("stroke-width", 0.5)
+            .style("stroke-opacity", 1)
             .call(d3.drag().on("drag", function(d, i) { dragFunction(this, d3.event, d.index, x, y, panel); }))
             .on("click", function(d)
               {
@@ -289,6 +274,8 @@
             .attr("r", 0)
             .style("fill", function(d) { return d.color; })
             .style("stroke", 'white')
+            .style("stroke-width", 0.5)
+            .style("stroke-opacity", 1)
             .call(d3.drag().on("drag", function(d, i) { dragFunction(this, d3.event, d.index, x, y, panel); }))
             .on("click", function(d)
               {
@@ -328,6 +315,8 @@
             .attr("r", 0)
             .style("fill", "black")
             .style("stroke", "white")
+            .style("stroke-width", 0.5)
+            .style("stroke-opacity", 1)
             .call(d3.drag().on("drag", function(d, i) { dragFunction(this, d3.event, d.index, x, y, panel); }))
             .on("click", function(d)
               {
@@ -351,10 +340,12 @@
             .attr("r", 0)
             .style("fill", "white")
             .style("stroke", "black")
+            .style("stroke-width", 0.5)
+            .style("stroke-opacity", 1)
             .call(d3.drag().on("drag", function(d, i) 
               { dragFunction(this, d3.event, d.index, x, y, panel); })
                 .on("start", function(d) {
-                  glyphs.select("line.awidth").style("stroke-width", 1);  
+                  glyphs.select("line.awidth").style("stroke-width", 0.1);  
                 })
                 .on("end", function(d)
                 {
@@ -420,55 +411,33 @@
         switch(pointType)
         {
           case "start":
-            opentypePath.commands[startIndex].x += idx;
-            opentypePath.commands[startIndex].y += idy;
-            opentypePath.commands[startIndex+1].x += idx;
-            opentypePath.commands[startIndex+1].y += idy;
-            opentypePath.commands[startIndex+4].x += idx;
-            opentypePath.commands[startIndex+4].y += idy;
-
             glyphData.glyph.strokeData[index].start.x += idx;
             glyphData.glyph.strokeData[index].start.y += idy;
           break;
           case "end":
-            opentypePath.commands[startIndex+2].x += idx;
-            opentypePath.commands[startIndex+2].y += idy;
-            opentypePath.commands[startIndex+3].x += idx;
-            opentypePath.commands[startIndex+3].y += idy;
-
             glyphData.glyph.strokeData[index].end.x += idx;
             glyphData.glyph.strokeData[index].end.y += idy;
           break;
           case "cp1":
-            opentypePath.commands[startIndex+2].x1 += idx;
-            opentypePath.commands[startIndex+2].y1 += idy;
-            opentypePath.commands[startIndex+4].x1 += idx;
-            opentypePath.commands[startIndex+4].y1 += idy;
-
             glyphData.glyph.strokeData[index].cp1.x += idx;
             glyphData.glyph.strokeData[index].cp1.y += idy;
           break;
           case "cp2":
-            opentypePath.commands[startIndex+2].x2 += idx;
-            opentypePath.commands[startIndex+2].y2 += idy;
-            opentypePath.commands[startIndex+4].x2 += idx;
-            opentypePath.commands[startIndex+4].y2 += idy;
-
             glyphData.glyph.strokeData[index].cp2.x += idx;
             glyphData.glyph.strokeData[index].cp2.y += idy;
           break;
-          case "awidth": 
+          case "aWidth":
             if(event.x > 0 && event.x < panel.drawParams.boxScale)
-            {
-              var bbox = opentypePath.getBoundingBox();
-              if(event.x >= x(bbox.x2))
               {
-                selection.attr("cx", event.x);
-                glyphData.glyph.advanceWidth = event.x / panel.drawParams.boxScale * GLYPH_SCALE;
-                d3.select(element.parentNode).select("line.awidth").attr("x1", event.x).attr("x2", event.x);     
+                var bbox = opentypePath.getBoundingBox();
+                if(event.x >= x(bbox.x2))
+                {
+                  selection.attr("cx", event.x);
+                  glyphData.glyph.advanceWidth = event.x / panel.drawParams.boxScale * GLYPH_SCALE;
+                  d3.select(element.parentNode).select("line.awidth").attr("x1", event.x).attr("x2", event.x);     
+                }
               }
-            }
-          break;
+            break;
           case "bbox":
             var bbox = opentypePath.getBoundingBox(); 
             if(event.x > 0 && event.x < panel.drawParams.boxScale - x(bbox.x2 - bbox.x1))
@@ -528,9 +497,46 @@
             console.log("Point type not recognized");
         }
 
-        if(pointType !== "bbox" && pointType !== "awidth")
+        if(pointType !== "bbox" && pointType !== "aWidth")
         {
-          //Update only the stroke that was changed.
+          var gg = glyphData.glyph.strokeData[index];
+          var strokeType = gg.type;
+          var stroke;
+          var path = {};
+          var newPath = new opentype.Path();
+          switch(strokeType)
+          {
+            case 'L':
+              stroke = panel.generator.generateLine(gg.start, gg.end);
+              break;
+            case 'Q':
+              stroke = panel.generator.generateQuadratic(gg.start, gg.cp1, gg.end);
+              path.cp1Pos = stroke[5];
+              path.cp1Neg =  stroke[6];
+              break;
+            case 'C':
+              stroke = panel.generator.generateCubic(gg.start, gg.cp1, gg.cp2, gg.end);
+              path.cp1Pos = stroke[5];
+              path.cp1Neg = stroke[6];
+              path.cp2Pos = stroke[7];
+              path.cp2Neg = stroke[8];
+              break;
+            default:
+              console.log("Invalid stroke generation selection");
+          }
+          
+          path.type = strokeType;
+          path.startPos = stroke[1];
+          path.startNeg = stroke[2];
+          path.endPos = stroke[3];
+          path.endNeg = stroke[4];
+
+          addContour(path, newPath);
+          for(var i = 0; i < newPath.commands.length; i++)
+          {
+            opentypePath.commands[startIndex+i] = newPath.commands[i];
+          }
+
           copyStroke(glyphData.glyph.strokeData[index], opentypePath, selection.datum(), index);
 
           var dGlyphs = d3.select(element.parentNode);
@@ -538,7 +544,8 @@
           dGlyphs.selectAll("path")
             .filter(function(d, i) { return i === index;})
               .attr("d", function(d) 
-                { var newPath = strokeInterpret(d.contours, x, y); return newPath; });
+                { var pp = strokeInterpret(d.contours, x, y); return pp; })
+              .style("fill-opacity", 1);
 
           var box = glyphData.glyph.path.getBoundingBox();
           dGlyphs.select("circle.bbox")

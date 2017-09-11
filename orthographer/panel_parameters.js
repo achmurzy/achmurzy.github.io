@@ -227,7 +227,7 @@ DrawParameters.prototype.addToggle = function(name, y)
                 if(_this.generator[name]) 
                     d3.select(this).style("fill", _this.boxColor);
                 else
-                    d3.select(this).style("fill", "red"); 
+                    d3.select(this).style("fill", "white"); 
             });
     this.parameterPanel.append("text")
         .attr("class", "noselect")

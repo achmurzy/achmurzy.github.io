@@ -143,8 +143,8 @@
       //Transfer elements to the alphabet panel and disable inappropriate callbacks
       function alphabetize(gElement)
       {
-        if(alphabetPanel.glyphData.length > 0)
-          alphabetPanel.hideFullButton(alphabetPanel.glyphData.length-1);
+        //if(alphabetPanel.glyphData.length > 0)
+        //  alphabetPanel.hideFullButton(alphabetPanel.glyphData.length-1);
         var glyphElement = d3.select(gElement);
         alphabetPanel.group.append(function() { return gElement; });
         alphabetPanel.glyphData.push(glyphElement.datum());
@@ -426,7 +426,7 @@
             glyphData.glyph.strokeData[index].cp2.x += idx;
             glyphData.glyph.strokeData[index].cp2.y += idy;
           break;
-          case "aWidth":
+          case "awidth":
             if(event.x > 0 && event.x < panel.drawParams.boxScale)
               {
                 var bbox = opentypePath.getBoundingBox();
@@ -575,14 +575,14 @@
         }
       }
 
-      function parseGlyph(text)
+      /*function parseGlyph(text)
       {
         //text = push first letter out 'M'
         var glyphPath = new opentype.Path();
         var pathList = []; 
         var colors = ['red', 'blue', 'green', 'yellow', 'magenta', 'cyan', 'orange', 'purple', 'grey'];
   
-        while(text[0] != 'M' && text.length > 0)
+        while(text[0] != 'Z' && text.length > 0)
         {
           var newPath;
           switch(text[0])
@@ -616,4 +616,4 @@
               path: glyphPath
         });
         return glyph;
-      }
+      }*/

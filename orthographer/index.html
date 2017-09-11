@@ -52,8 +52,8 @@
       var BOX_SCALE = 50;
       var colors = ["green", "red", "cyan", "magenta", "yellow"];
       var INSPECT_SCALE = 4;      
-      var GENERATION_RATE = 100;
-      var DRAW_SPEED = 50;
+      var GENERATION_RATE = 150;
+      var DRAW_SPEED = 100;
 
       var panel_x = 10;
       var GAP = 50;
@@ -68,7 +68,7 @@
         return newPanel;
       }
 
-      for(var i = 0 ; i < 2; i++)
+      for(var i = 0 ; i < 1; i++)
       {
         addPanel(i);
       }
@@ -86,8 +86,7 @@
                         .duration(100)
                         .style("stroke-opacity", 1); });
       */
-      var fontPanel = addPanel(2);
-      fontPanel.toggleGeneration();
+      var fontPanel = addPanel(1);
       var ff = loadFont('lklug.ttf', fontPanel);
     </script>
   </body>

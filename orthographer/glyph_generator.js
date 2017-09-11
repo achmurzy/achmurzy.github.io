@@ -181,6 +181,8 @@ function addContour(path, glyphPath)
 	}
 }
 
+//We want to contract the size of datasets by making start points implicit
+//for symbols besides 'M'
 Generator.prototype.trainGlyph = function()
 {
 	var strokeList = ['M']; 
@@ -337,7 +339,7 @@ Generator.prototype.parseGlyphs = function(text, panel)
 	      addContour(path, currentGlyph.path);
 	    }
 	  }
-	panel.hideFullButton((panel.drawParams.glyphsX()*panel.drawParams.glyphsY()));
+	panel.hideFullButton(panel.drawParams.glyphsX()*panel.drawParams.glyphsY());
 	panel.glyphData = [];
 	panel.expandedElement = Number.MAX_SAFE_INTEGER;
 	  for(var i =0;i<drawGlyphs.length;i++)

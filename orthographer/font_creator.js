@@ -13,10 +13,76 @@ function loadFont(fontName, panel)
   });
 }
 
+//Mimics function in orthographer.js for making
+//glyphs visualizable
+function fontGlyphToStrokes(glyph, color)
+{
+  var glyphObject = new Object();
+  glyphObject.strokes = fontCopyStrokes(glyph.path, color);
+  glyphObject.index = glyph.index;
+  glyphObject.glyph = glyph;
+
+  return glyphObject;
+}
+
+//Mimics function in orthographer.js for making strokes
+//on fonts visualizable without being editable - Takes glyph path
+function fontCopyStrokes(path, color)
+{
+  var ind = 0;
+  var stroke = new Object();
+  stroke.contours = [];
+  stroke.color = color;
+  var strokeObject = [];
+  if(path.commands.length > 0)
+  {
+    while(path.commands[ind].type != 'Z' || ind > path.commands.length)
+    {
+      var ss = path.commands[ind];
+      stroke.contours.push(ss);
+      ind++;
+      if(path.commands[ind].type === 'M')
+      {
+        strokeObject.push(stroke);
+        stroke = new Object();
+        stroke.color = color;
+        stroke.contours = [];
+      }  
+    } 
+  }
+  
+  return strokeObject;
+}
+
+//This function will write the commands in our training data format
+//We need to make sure the starting point is listed explicitly like our
+//other training data. This is always the end point of the previous stroke
+function fontTrainingData(font)
+{
+  var train = []
+  var glyphs = font.glyphs.glyphs;
+  for(var i = 0; i < gylphs.length; i++)
+  {
+    var path = glyphs[i].path;
+    var ind = 0;
+    if(path.commands.length > 0)
+    {
+      while(path.commands[ind].type != 'Z' || ind > path.commands.length)
+      {
+        var ss = path.commands[ind];
+        train.push.apply(train, ss);
+        ind++;
+      } 
+    }
+  }
+  var dataString = JSON.stringify(train);
+  download(dataString, "font_train.txt");
+}
+
 function buildFont(glyphData, fontName="codex_") //Take glyphs in the alphabet panel and write to opentype
 {
   var codex = [];
-  alphabetPanel.group.selectAll("g").each(function(d, i) 
+  alphabetPanel.group.selectAll("g.font").each(function(d, i) 
   {
     console.log("Adding glyph: " + i);
     d.glyph.index = i;

@@ -5,8 +5,12 @@ function Panel(name, draw, glyph)
 	this.name = name;
 	this.drawParams = draw;
   this.generator = glyph;
+  this.INIT_DATA = true;
 
 	this.glyphData = [];
+  this.windowData = [];
+  this.MAX_GLYPHS = this.drawParams.glyphCount*3;
+  this.glyphWindow = 0;
 	this.group = canvas.append("g").attr("transform", "translate("+this.drawParams.x+","+this.drawParams.y+")");
 
   this.drawParams.createButton(this);
@@ -25,9 +29,16 @@ function Panel(name, draw, glyph)
 							{
 								_this.fullClick = true;
 								_this.hideFullButton((_this.drawParams.glyphsX()*_this.drawParams.glyphsY()));
-		    					_this.glyphData = [];
-		    					_this.expandedElement = Number.MAX_SAFE_INTEGER;
-								_this.toggleGeneration();
+		    	
+                _this.expandedElement = Number.MAX_SAFE_INTEGER;
+		    				_this.glyphWindow += _this.drawParams.glyphCount;
+                _this.windowData = [];
+                if(_this.MAX_GLYPHS === _this.glyphData.length && _this.glyphWindow === _this.MAX_GLYPHS)
+                {
+                  _this.glyphData = [];
+                  //_this.toggleGeneration();
+                  _this.glyphWindow = 0;
+                }
 							}
 							
 						});
@@ -53,14 +64,12 @@ function Panel(name, draw, glyph)
 							.attr("y2", this.drawParams.boxScale + this.drawParams.boxScale/8)
               .style("stroke-width", 0.5);
 
-  //These buttons were written hastily, and are sloppy and clogging the code.
-  //Totally unnatural, rushed bullshit.
 	this.showFullButton = function(index) 
 					{ 
 						var _this = this;
 						d3.select(this.fullButton).remove();
 						var lines = this.group.selectAll("line.full").remove();
-						var lastElement = this.group.selectAll("g").filter(function(d, i) 
+						var lastElement = this.group.selectAll("g."+this.name).filter(function(d, i) 
 						{
 							return i === index;
 						});
@@ -103,46 +112,34 @@ function Panel(name, draw, glyph)
 					};
 
 	this.glyphCounter = 0;
-    this.expandedElement = Number.MAX_SAFE_INTEGER;
-    this.lastExpanded = this.expandedElement;
-    this.glyphsFull = function() 
-    { return this.drawParams.glyphsX()*this.drawParams.glyphsY() === this.glyphData.length; };
+  this.expandedElement = Number.MAX_SAFE_INTEGER;
+  this.lastExpanded = this.expandedElement;
+  this.glyphsFull = function() 
+    { return this.MAX_GLYPHS === this.glyphData.length; };
 
-
-    this.firehose = false;
-    this.inspect = true;
+  this.inspect = true;
 	this.addGlyph = function(glyph)  
   {
-		if(this.glyphsFull())
-    	{   
-	    	if(this.firehose)
-	    	{
-	    		this.glyphData = [];
-	    	}
-        else if(this.name === "font")
-        {
-
-        }
-	    	else
-	    	{
-	    		this.toggleGeneration();
-	    		this.showFullButton((this.drawParams.glyphsX()*this.drawParams.glyphsY()));
-	    	}
-    	}
-      else
-      {
-        this.glyphData.push(glyphToStrokes(glyph));
-        this.glyphCounter++;   
-        this.update();
-      } 
+    this.glyphData.push(glyphToStrokes(glyph));
+    this.glyphCounter++;   
 	};
 
 	var timeCall = function()
 		{ 
 			_this.totalTime += (d3.now() - _this.lastTime);
 	 		_this.lastTime = d3.now(); 
-      var glyph = _this.generator.generateGlyph(_this.glyphCounter);
-	 		_this.addGlyph(glyph);
+      
+      if(!_this.glyphsFull())
+	 		{
+        var glyph = _this.generator.generateGlyph(_this.glyphCounter);
+        _this.addGlyph(glyph);
+      }  
+      
+      if(_this.windowData.length < _this.drawParams.glyphCount)
+        {
+          _this.windowData.push(_this.glyphData[_this.windowData.length+_this.glyphWindow]);
+          _this.update();
+        }
 	 	};
 
 	this.timer = d3.interval(timeCall, this.drawParams.generationTime);
@@ -183,7 +180,7 @@ Panel.prototype.update = function()
 	var _this = this;
 
 	//Use glyph index as a key function to uniquely identify glyphs
-    var glyphs = this.group.selectAll("g."+this.name).data(this.glyphData, function(d, i) 
+  var glyphs = this.group.selectAll("g."+this.name).data(this.windowData, function(d, i) 
           { if(d === undefined) console.log("Undefined: "+i); else return d.index; });
 
     glyphs.exit().remove();
@@ -216,8 +213,8 @@ Panel.prototype.update = function()
           			{ return d3.select(this.parentNode).datum().strokes.length * _this.drawParams.drawDuration; })
           		.style("fill-opacity", 0.2);
 
-     var strokes = glyphs.merge(enterGlyphs).selectAll("path").data(function(d, i) { return d.strokes; });
-  
+    var strokes = glyphs.merge(enterGlyphs).selectAll("path").data(function(d, i) { return d.strokes; });
+
     //Enter update - stroke-by-stroke render
     strokes.enter()
       .append("path")  
@@ -243,7 +240,13 @@ Panel.prototype.update = function()
           .on("end", function() { d3.select(this).attr("class", "drawn"); });
 
     //Responsible for initializing glyph points for editing
-    initGlyphData(enterGlyphs, _this.drawParams.xScale, _this.drawParams.yScale, _this);
+    if(this.INIT_DATA)
+      initGlyphData(enterGlyphs, _this.drawParams.xScale, _this.drawParams.yScale, _this);
+
+    if(this.windowData.length === this.drawParams.glyphCount)
+    {
+      this.showFullButton(this.drawParams.glyphCount-1);
+    }
 };
 
 //Factored click function with click/double-click semantics
@@ -314,13 +317,14 @@ Panel.prototype.doubleClickSemantics = function(_this, gElement)
         alphabetize(gElement);
         _this.toggleGlyphData(gSelect, false);
         _this.removeGlyph(_this, positionIndex);
-        if(_this.totalTime === _this.stopTime)
-        	_this.toggleGeneration();
+        //if(_this.totalTime === _this.stopTime)
+        //	_this.toggleGeneration();
     }
 };
 
 Panel.prototype.removeGlyph = function(_this, index){
-	_this.glyphData.splice(index, 1);
+	_this.glyphData.splice(_this.glyphWindow+index, 1);
+  _this.windowData.splice(index, 1);
 	if(index === _this.expandedElement)
 	{
 		_this.expandedElement = Number.MAX_SAFE_INTEGER;
@@ -447,21 +451,28 @@ Panel.prototype.toggleGlyphData = function(glyph, up)
     return parseTransform(panel.positionGlyph(i, Number.MAX_SAFE_INTEGER));
   };
 
+
   Panel.prototype.showFont = function(font)
   {
+    this.toggleGeneration();
     this.glyphData = [];
-    console.log(font);
+    this.INIT_DATA = false;
     for(var i = 0; i < font.glyphs.length; i++)
     {
-      //this.glyphData.push(glyphToStrokes(font.glyphs.glyphs[i]));
-      for(var j = 0; j < font.glyphs.glyphs[i].path.commands.length;j++)
+      if(this.glyphData.length > this.MAX_GLYPHS*2)
+        break;
+      var glyph = fontGlyphToStrokes(font.glyphs.glyphs[i], this.drawParams.boxColor);
+
+      if(glyph.strokes.length > 0)
       {
-        var glyph = new Object();
-        glyph.strokeData = [];
-        //Need to get into JSON-style list of commands for learning module
-        //start is x,yy
-      }
+        this.glyphData.push(glyph);
+        this.windowData.push(glyph);
+      }  
+      var height = this.windowData.length / this.drawParams.glyphsX() * this.drawParams.boxScale
+      d3.select("body").select("svg").attr("height", 800+height);
     }
-    //this.update();
+    
+    this.update();
+    //this.showFullButton(this.drawParams.glyphCount-1);
   };
       
